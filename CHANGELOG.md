@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.3
+
+Model capability corrections based on official QwenCloud docs audit (docs.qwencloud.com).
+
+### Fixed
+
+- **Vision input support for qwen3.8-max-preview, qwen3.7-plus, qwen3.6-flash** — changed `input` from `["text"]` to `["text", "image"]`. Official docs list "visual understanding" as a capability for these three models. Verified end-to-end: qwen3.7-plus correctly describes images via the OpenAI-compatible vision API.
+- **README: qwen3.6-flash thinking levels** — corrected from "off (no reasoning)" to "low / medium / high". qwen3.6-flash supports reasoning per official docs and our code already had `DEFAULT_THINKING_LEVEL_MAP`.
+
 ## 0.1.2
 
 Critical bug fixes found during real-world pi testing.
