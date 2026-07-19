@@ -156,7 +156,7 @@ describe("resolveModels", () => {
     expect(result).toEqual(MODELS);
   });
 
-  it("returns remote models when fetch succeeds", async () => {
+  it("returns remote models with static non-chat models appended", async () => {
     (fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -171,8 +171,15 @@ describe("resolveModels", () => {
       ),
     );
     const result = await resolveModels("test_key");
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe("qwen3.7-plus");
-    expect(result[0].name).toBe("Qwen3.7 Plus Updated");
+    // Non-chat models (wan, happyhorse) appended before remote chat models.
+    const chatModels = result.filter(
+      (m) => !m.id.startsWith("wan") && !m.id.startsWith("happyhorse"),
+    );
+    expect(chatModels).toHaveLength(1);
+    expect(chatModels[0].id).toBe("qwen3.7-plus");
+    expect(chatModels[0].name).toBe("Qwen3.7 Plus Updated");
+    // Static non-chat models are included.
+    expect(result.some((m) => m.id === "wan2.7-image")).toBe(true);
+    expect(result.some((m) => m.id === "happyhorse-1.1-t2v")).toBe(true);
   });
 });

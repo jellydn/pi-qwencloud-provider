@@ -170,7 +170,12 @@ export async function resolveModels(
 ): Promise<readonly ModelConfig[]> {
   if (apiKey) {
     const remote = await fetchRemoteModels({ ...options, apiKey });
-    if (remote) return remote;
+    if (remote) {
+      // Append static non-chat models (image/video generation) so they
+      // are always available regardless of remote fetch success.
+      const nonChat = MODELS.filter((m) => isNonChatModel(m.id));
+      return nonChat.length > 0 ? [...nonChat, ...remote] : remote;
+    }
   }
   return MODELS;
 }
