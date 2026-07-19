@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.1
+
+Bug fixes based on research findings and API smoke testing.
+
+### Fixed
+
+- DeepSeek V4 Pro: `xhigh` now maps to `"max"` instead of `"high"` (chat API only accepts `high`/`max`)
+- `fetchRemoteModels` now excludes non-chat model families (`wan`, `happyhorse`, `qwen-image`) from dynamic discovery
+- Pricing corrections: `qwen3.6-flash` (0.25/1.50), `glm-5.2` (1.10/3.85); `deepseek-v4-pro` flagged as unconfirmed estimate
+- `isNonChatModel` filter now uses case-insensitive matching
+
 ## 0.1.0
 
 Initial release — QwenCloud provider for pi.
