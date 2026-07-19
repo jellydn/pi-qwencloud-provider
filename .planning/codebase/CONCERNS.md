@@ -11,6 +11,27 @@
 ### ~~env.ts junk drawer~~
 **Fixed:** `sanitizeApiKey` moved to `oauth.ts` (only caller). Dead `buildEndpointUrl` + `DEFAULT_ENDPOINT` deleted. env.ts is now config constants + `resolveApiBase` only.
 
+### ~~CONTROL_CHARS_RE readability (CodeRabbit nitpick)~~
+**Fixed:** Simplified from `new RegExp(String.fromCharCode(...), "g")` template-literal construction to a clean `/[\x00-\x1F\x7F]/g` regex literal. Same behaviour, better readability.
+
+### ~~Self-dependency in package.json~~
+**Fixed:** Removed `"pi-qwencloud-provider": "^0.1.2"` from `dependencies` — a leftover scaffold artefact.
+
+### ~~defaultAuthPaths untested~~
+**Fixed:** Added a unit test verifying `defaultAuthPaths("/home/test")` returns `["/home/test/.pi/agent/auth.json"]`.
+
+### ~~Test file not split along module seam~~
+**Fixed:** `models.test.ts` (289 lines) split into `catalog.test.ts` (10 tests, imports catalog + thinking directly), `discovery.test.ts` (10 tests, imports discovery + catalog), and `models.test.ts` (4 barrel integration tests). 101 tests across 11 files.
+
+### ~~thinkingMapFor not wired into discovery (spec gap)~~
+**Fixed:** `parseRemoteModel` now calls `thinkingMapFor(reasoning, fallback?.thinkingLevelMap)` instead of the inline ternary. Import slimmed from two constants to one function.
+
+### ~~Non-chat models missing from remote results~~
+**Fixed:** `resolveModels` appends static non-chat models (Wan, HappyHorse) to remote results so they're consistently available regardless of fetch success.
+
+### ~~Section rulers missing in thinking.ts~~
+**Fixed:** Added three section rulers (Types, Translation Functions, Thinking Level Maps) matching the rest of the codebase.
+
 ## Remaining
 
 ### 1. Wan endpoint URL construction is fragile
@@ -23,34 +44,16 @@ The Wan endpoint URL is derived from the chat completions base by regex-replacin
 
 **Severity:** Low (code slop) | **File:** `src/thinking.ts`
 
-The `reasoningEffortFor(map, level)` function is exported but never called within the provider. It exists as a public utility for external consumers of the barrel, but the architecture review's intent was to use it as the single translation interface internally. The catalog assigns maps by reference; discovery selects maps with a ternary. The function is essentially dead code within the provider.
+The `reasoningEffortFor(map, level)` function is exported but never called within the provider. It exists as a public utility for external consumers. The `thinkingMapFor` function now handles map selection in discovery; `reasoningEffortFor` is the level-translation counterpart for external callers.
 
-### 3. No test-split along the module seam
-
-**Severity:** Low | **File:** `tests/unit/models.test.ts`
-
-The architecture review recommended splitting the test file along the catalog/discovery seam. Currently `models.test.ts` still imports from the barrel (`../../src/models.js`) and tests both concerns through the same file. A `catalog.test.ts` + `discovery.test.ts` split would improve locality and make data-only changes faster to validate.
-
-### 4. `defaultAuthPaths` is still exported but weakly tested
-
-**Severity:** Low | **File:** `src/auth.ts`
-
-After collapsing `walkAuthPaths`, `defaultAuthPaths` is still exported as a public API. It was previously tested in `auth.test.ts` but that test was removed during the refactor. The function is simple (one-line array) but untested.
-
-### 5. HappyHorse video generation not implemented
+### 3. HappyHorse video generation not implemented
 
 **File:** `src/catalog.ts` (models in catalog, no generation module)
 
-The HappyHorse models (`happyhorse-1.1-i2v/t2v/r2v`) are in the catalog for discovery but have no generation module equivalent to `wan.ts`. HappyHorse uses an async task pattern (submit → poll → download) which is more complex than Wan's synchronous endpoint. Follows the same API path convention as Wan but with different endpoint and polling requirements.
+The HappyHorse models (`happyhorse-1.1-i2v/t2v/r2v`) are in the catalog for discovery but have no generation module equivalent to `wan.ts`. HappyHorse uses an async task pattern (submit → poll → download) which is more complex than Wan's synchronous endpoint.
 
-### 6. No vision test for qwen3.8-max-preview and qwen3.6-flash
+### 4. No vision test for qwen3.8-max-preview and qwen3.6-flash
 
 **Severity:** Low | **File:** `tests/e2e/smoke-pi.sh`
 
 The vision E2E test only covers `qwen3.7-plus`. Both `qwen3.8-max-preview` and `qwen3.6-flash` also support visual understanding per official docs, but this hasn't been verified in the E2E pipeline.
-
-### 7. `pi-qwencloud-provider` self-dependency in package.json
-
-**Severity:** Low | **File:** `package.json`
-
-The `dependencies` field contains `"pi-qwencloud-provider": "^0.1.2"` — a self-reference. This is likely a leftover from initial scaffolding and should be removed.

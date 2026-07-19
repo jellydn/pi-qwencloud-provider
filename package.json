@@ -80,8 +80,5 @@
     "extensions": [
       "./src/index.ts"
     ]
-  },
-  "dependencies": {
-    "pi-qwencloud-provider": "^0.1.2"
   }
 }

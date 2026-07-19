@@ -17,10 +17,8 @@ const TEN_YEARS_MS = 10 * 365 * 24 * 60 * 60 * 1000; // API keys don't expire
 // ─── API key sanitisation ──────────────────────────────────────────────────
 
 /** Regex matching control characters (0x00-0x1F) and DEL (0x7F). */
-const CONTROL_CHARS_RE = new RegExp(
-  `[${String.fromCharCode(0)}-${String.fromCharCode(31)}${String.fromCharCode(127)}]`,
-  "g",
-);
+// oxlint-disable-next-line no-control-regex -- intentionally matches control chars
+const CONTROL_CHARS_RE = /[\x00-\x1F\x7F]/g;
 
 /**
  * Remove terminal paste wrappers and control chars from API key input.

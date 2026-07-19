@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { resolveApiKey } from "../../src/auth.js";
+import { resolveApiKey, defaultAuthPaths } from "../../src/auth.js";
+
+describe("defaultAuthPaths", () => {
+  it("resolves to ~/.pi/agent/auth.json", () => {
+    const paths = defaultAuthPaths("/home/test");
+    expect(paths).toHaveLength(1);
+    expect(paths[0]).toBe("/home/test/.pi/agent/auth.json");
+  });
+});
 
 describe("resolveApiKey", () => {
   it("returns provided key first", () => {
