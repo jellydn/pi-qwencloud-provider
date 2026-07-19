@@ -100,7 +100,7 @@ describe("MODELS", () => {
   it("declares supportsDeveloperRole: true for all models", () => {
     for (const model of MODELS) {
       expect(model.compat).toEqual(QWENCLOUD_OPENAI_COMPAT);
-      expect(model.compat.supportsDeveloperRole).toBe(true);
+      expect(model.compat.supportsDeveloperRole).toBe(false);
     }
   });
 });

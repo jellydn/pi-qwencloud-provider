@@ -81,8 +81,10 @@ export interface QwenCloudOpenAICompat {
   readonly thinkingFormat?: string;
 }
 
+// QwenCloud rejects the `developer` role — only accepts system/assistant/user/tool/function.
+// pi-ai defaults to `developer` for reasoning models, so this must be false.
 export const QWENCLOUD_OPENAI_COMPAT: QwenCloudOpenAICompat = {
-  supportsDeveloperRole: true,
+  supportsDeveloperRole: false,
 };
 
 /**
