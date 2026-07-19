@@ -22,6 +22,7 @@ import { resolveModels } from "./models.js";
 import { handleQwenCloudError } from "./error-handler.js";
 import { getApiKey as oauthGetApiKey, login, refreshToken } from "./oauth.js";
 import { generateAndDownloadWanImage } from "./wan.js";
+import { generateAndDownloadHappyHorseVideo } from "./happyhorse.js";
 
 // QwenCloud exposes a standard OpenAI-compatible chat completions API.
 // It supports both `system` and `developer` roles, so `supportsDeveloperRole`
