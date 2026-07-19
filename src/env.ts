@@ -16,9 +16,10 @@ export const ENV_API_KEY = "QWENCLOUD_API_KEY";
 
 /**
  * The QwenCloud provider name used in pi (pi registerProvider name).
- * Models are referenced as `qwencloud/<model-slug>`.
+ * Models are referenced as `qw/<model-slug>`. Short name avoids clashes
+ * with the clinepass provider (both have deepseek-v4-pro and glm-5.2).
  */
-export const PROVIDER_NAME = "qwencloud";
+export const PROVIDER_NAME = "qw";
 
 /**
  * Resolve the API base URL, allowing override via QWENCLOUD_API_BASE env var.

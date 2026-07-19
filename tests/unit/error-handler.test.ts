@@ -145,7 +145,7 @@ describe("handleQwenCloudError", () => {
     );
 
     expect(errorSpy).toHaveBeenCalledTimes(1);
-    expect(errorSpy.mock.calls[0][0]).toContain("[qwencloud]");
+    expect(errorSpy.mock.calls[0][0]).toContain("[qw]");
     expect(errorSpy.mock.calls[0][0]).toContain(QWENCLOUD_ERROR_MESSAGES.auth_invalid);
     errorSpy.mockRestore();
   });

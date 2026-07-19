@@ -51,12 +51,12 @@ pnpm add pi-qwencloud-provider
 
 | Model               | Model ID                        | Context | Reasoning                   |
 | :------------------ | :------------------------------ | :------ | :-------------------------- |
-| Qwen3.8 Max Preview | `qwencloud/qwen3.8-max-preview` | 262K    | low / medium / high         |
-| Qwen3.7 Max         | `qwencloud/qwen3.7-max`         | 262K    | low / medium / high         |
-| Qwen3.7 Plus        | `qwencloud/qwen3.7-plus`        | 1M      | low / medium / high         |
-| Qwen3.6 Flash       | `qwencloud/qwen3.6-flash`       | 131K    | off (no reasoning)          |
-| DeepSeek V4 Pro     | `qwencloud/deepseek-v4-pro`     | 1M      | high (xhigh → max)          |
-| GLM-5.2             | `qwencloud/glm-5.2`             | 200K    | low / medium / high / xhigh |
+| Qwen3.8 Max Preview | `qw/qwen3.8-max-preview` | 262K    | low / medium / high         |
+| Qwen3.7 Max         | `qw/qwen3.7-max`         | 262K    | low / medium / high         |
+| Qwen3.7 Plus        | `qw/qwen3.7-plus`        | 1M      | low / medium / high         |
+| Qwen3.6 Flash       | `qw/qwen3.6-flash`       | 131K    | off (no reasoning)          |
+| DeepSeek V4 Pro     | `qw/deepseek-v4-pro`     | 1M      | high (xhigh → max)          |
+| GLM-5.2             | `qw/glm-5.2`             | 200K    | low / medium / high / xhigh |
 
 > **Thinking levels**: pi supports 6 levels — `off`, `minimal`, `low`, `medium`, `high`, `xhigh`. Each model declares which levels it supports, mapped to the provider's `reasoning_effort` parameter. Set the thinking level with pi's `--thinking` flag or `/thinking` command. A level marked as unsupported maps to `null` — no `reasoning_effort` is sent to the API, so the model runs with its default reasoning behavior.
 >
@@ -68,7 +68,7 @@ QwenCloud uses **static API keys** (no OAuth). The extension resolves the key in
 
 1. Explicit key passed to `pi /login`
 2. `QWENCLOUD_API_KEY` environment variable
-3. `~/.pi/agent/auth.json` — `{ "apiKey": "..." }`, `{ "qwencloud": "..." }`, or `{ "qwencloud": { "access": "..." } }`
+3. `~/.pi/agent/auth.json` — `{ "apiKey": "..." }`, `{ "qw": "..." }`, or `{ "qw": { "access": "..." } }`
 
 Set the environment variable:
 
@@ -83,20 +83,20 @@ Or run `pi /login` and select **QwenCloud** — it opens the dashboard and promp
 
 ```sh
 # Non-interactive
-pi --model qwencloud/qwen3.7-plus -p "Explain async/await in JavaScript"
+pi --model qw/qwen3.7-plus -p "Explain async/await in JavaScript"
 
 # Interactive
-pi --model qwencloud/deepseek-v4-pro
+pi --model qw/deepseek-v4-pro
 
 # List available models
-pi --list-models qwencloud
+pi --list-models qw
 
 # Use in another project
 cd my-project
-pi --model qwencloud/glm-5.2 --trust "Refactor the auth module"
+pi --model qw/glm-5.2 --trust "Refactor the auth module"
 ```
 
-Switch models in-session with `/model qwencloud/qwen3.7-max`.
+Switch models in-session with `/model qw/qwen3.7-max`.
 
 ### Thinking levels
 
@@ -104,13 +104,13 @@ Set the reasoning effort per model using pi's `--thinking` flag or the in-sessio
 
 ```sh
 # Use high reasoning with DeepSeek V4 Pro
-pi --model qwencloud/deepseek-v4-pro --thinking high -p "Design a scalable microservice architecture"
+pi --model qw/deepseek-v4-pro --thinking high -p "Design a scalable microservice architecture"
 
 # GLM-5.2 supports four levels up to xhigh
-pi --model qwencloud/glm-5.2 --thinking xhigh -p "Solve this complex math proof"
+pi --model qw/glm-5.2 --thinking xhigh -p "Solve this complex math proof"
 
 # Disable reasoning for a quick code gen task
-pi --model qwencloud/qwen3.6-flash --thinking off -p "Write a React form component"
+pi --model qw/qwen3.6-flash --thinking off -p "Write a React form component"
 ```
 
 Each model's supported thinking levels are listed in the [Supported Models](#supported-models) table above. Unsupported levels are not sent to the API — the model runs with its default reasoning behavior.

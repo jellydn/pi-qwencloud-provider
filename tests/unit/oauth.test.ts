@@ -53,7 +53,7 @@ describe("login", () => {
     await login(callbacks);
 
     expect(warnSpy).toHaveBeenCalledTimes(1);
-    expect(warnSpy.mock.calls[0][0]).toContain("[qwencloud]");
+    expect(warnSpy.mock.calls[0][0]).toContain("[qw]");
     expect(warnSpy.mock.calls[0][0]).toContain("unusually short");
     warnSpy.mockRestore();
   });

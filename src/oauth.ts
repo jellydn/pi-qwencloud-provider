@@ -50,7 +50,7 @@ export async function login(callbacks: OAuthLoginCallbacks): Promise<OAuthCreden
 
   if (apiKey.length < 20) {
     console.warn(
-      `[qwencloud] Warning: API key looks unusually short (${apiKey.length} chars). ` +
+      `[qw] Warning: API key looks unusually short (${apiKey.length} chars). ` +
         "Verify you copied the full key from home.qwencloud.com → API Keys.",
     );
   }

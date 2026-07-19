@@ -3,36 +3,36 @@ import { resolveApiKey, defaultAuthPaths } from "../../src/auth.js";
 
 describe("resolveApiKey", () => {
   it("returns provided key first", () => {
-    expect(resolveApiKey("qwen_provided")).toBe("qwen_provided");
+    expect(resolveApiKey("qw_provided")).toBe("qw_provided");
   });
 
   it("falls back to env var", () => {
     expect(
       resolveApiKey(undefined, {
-        env: { QWENCLOUD_API_KEY: "qwen_env" },
+        env: { QWENCLOUD_API_KEY: "qw_env" },
       }),
-    ).toBe("qwen_env");
+    ).toBe("qw_env");
   });
 
   it("falls back to auth.json with apiKey field", () => {
-    const readFile = () => JSON.stringify({ apiKey: "qwen_from_file" });
+    const readFile = () => JSON.stringify({ apiKey: "qw_from_file" });
     const fileExists = () => true;
-    expect(resolveApiKey(undefined, { readFile, fileExists })).toBe("qwen_from_file");
+    expect(resolveApiKey(undefined, { readFile, fileExists })).toBe("qw_from_file");
   });
 
-  it("falls back to auth.json with qwencloud string field", () => {
-    const readFile = () => JSON.stringify({ qwencloud: "qwen_cp_string" });
+  it("falls back to auth.json with qw string field", () => {
+    const readFile = () => JSON.stringify({ qw: "qw_string" });
     const fileExists = () => true;
-    expect(resolveApiKey(undefined, { readFile, fileExists })).toBe("qwen_cp_string");
+    expect(resolveApiKey(undefined, { readFile, fileExists })).toBe("qw_string");
   });
 
-  it("falls back to auth.json with qwencloud OAuth-style object", () => {
+  it("falls back to auth.json with qw OAuth-style object", () => {
     const readFile = () =>
       JSON.stringify({
-        qwencloud: { type: "oauth", access: "qwen_oauth_key" },
+        qw: { type: "oauth", access: "qw_oauth_key" },
       });
     const fileExists = () => true;
-    expect(resolveApiKey(undefined, { readFile, fileExists })).toBe("qwen_oauth_key");
+    expect(resolveApiKey(undefined, { readFile, fileExists })).toBe("qw_oauth_key");
   });
 
   it("returns undefined when no key is available", () => {
@@ -50,15 +50,15 @@ describe("resolveApiKey", () => {
   });
 
   it("QWENCLOUD_API_KEY env wins over populated auth file", () => {
-    const readFile = () => JSON.stringify({ apiKey: "qwen_from_file" });
+    const readFile = () => JSON.stringify({ apiKey: "qw_from_file" });
     const fileExists = () => true;
     expect(
       resolveApiKey(undefined, {
-        env: { QWENCLOUD_API_KEY: "qwen_env_wins" },
+        env: { QWENCLOUD_API_KEY: "qw_env_wins" },
         readFile,
         fileExists,
       }),
-    ).toBe("qwen_env_wins");
+    ).toBe("qw_env_wins");
   });
 });
 

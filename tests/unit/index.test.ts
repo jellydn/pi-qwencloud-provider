@@ -68,6 +68,7 @@ describe("provider registration", () => {
     expect(models).toHaveLength(MODELS.length);
 
     for (let i = 0; i < MODELS.length; i++) {
+      // Model IDs no longer include qwencloud/ prefix.
       expect(models[i].id).toBe(MODELS[i].id);
       expect(models[i].name).toBe(MODELS[i].name);
       expect(models[i].reasoning).toBe(MODELS[i].reasoning);

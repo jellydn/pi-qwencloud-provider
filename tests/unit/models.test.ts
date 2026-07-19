@@ -13,14 +13,14 @@ describe("modelIds", () => {
   it("returns all model IDs", () => {
     const ids = modelIds();
     expect(ids).toHaveLength(MODELS.length);
-    expect(ids).toContain("qwencloud/qwen3.7-plus");
-    expect(ids).toContain("qwencloud/deepseek-v4-pro");
-    expect(ids).toContain("qwencloud/glm-5.2");
+    expect(ids).toContain("qwen3.7-plus");
+    expect(ids).toContain("deepseek-v4-pro");
+    expect(ids).toContain("glm-5.2");
   });
 
-  it("all text model IDs start with qwencloud/", () => {
+  it("model IDs do not include provider prefix", () => {
     for (const id of modelIds()) {
-      expect(id.startsWith("qwencloud/")).toBe(true);
+      expect(id.startsWith("qwencloud/")).toBe(false);
     }
   });
 });
@@ -61,7 +61,7 @@ describe("MODELS", () => {
   });
 
   it("GLM-5.2 supports off=none, low/medium/high/xhigh", () => {
-    const model = MODELS.find((m) => m.id === "qwencloud/glm-5.2")!;
+    const model = MODELS.find((m) => m.id === "glm-5.2")!;
     const map = model.thinkingLevelMap;
     expect(map.off).toBe("none");
     expect(map.low).toBe("low");
@@ -71,7 +71,7 @@ describe("MODELS", () => {
   });
 
   it("DeepSeek V4 Pro supports off=none, high/xhigh=max", () => {
-    const model = MODELS.find((m) => m.id === "qwencloud/deepseek-v4-pro")!;
+    const model = MODELS.find((m) => m.id === "deepseek-v4-pro")!;
     const map = model.thinkingLevelMap;
     expect(map.off).toBe("none");
     expect(map.low).toBeNull();
@@ -81,15 +81,13 @@ describe("MODELS", () => {
   });
 
   it("qwen3.6-flash supports reasoning with default map", () => {
-    const model = MODELS.find((m) => m.id === "qwencloud/qwen3.6-flash")!;
+    const model = MODELS.find((m) => m.id === "qwen3.6-flash")!;
     expect(model.reasoning).toBe(true);
     expect(model.thinkingLevelMap).toEqual(DEFAULT_THINKING_LEVEL_MAP);
   });
 
   it("Wan and HappyHorse models have reasoning: false and placeholder tokens", () => {
-    const genModels = MODELS.filter(
-      (m) => m.id.startsWith("qwencloud/wan") || m.id.startsWith("qwencloud/happyhorse"),
-    );
+    const genModels = MODELS.filter((m) => m.id.startsWith("wan") || m.id.startsWith("happyhorse"));
     for (const m of genModels) {
       expect(m.reasoning).toBe(false);
       expect(m.contextWindow).toBeGreaterThan(0);
@@ -143,7 +141,7 @@ describe("fetchRemoteModels", () => {
         JSON.stringify({
           data: [
             {
-              id: "qwencloud/qwen3.7-plus",
+              id: "qwen3.7-plus",
               name: "Qwen3.7 Plus",
               context_length: 1_048_576,
               max_output_tokens: 131_072,
@@ -161,28 +159,29 @@ describe("fetchRemoteModels", () => {
     );
     const result = await fetchRemoteModels({ apiKey: "test_key" });
     expect(result).toHaveLength(1);
-    expect(result![0].id).toBe("qwencloud/qwen3.7-plus");
+    expect(result![0].id).toBe("qwen3.7-plus");
     expect(result![0].name).toBe("Qwen3.7 Plus");
     expect(result![0].contextWindow).toBe(1_048_576);
     expect(result![0].reasoning).toBe(true);
     expect(result![0].cost.input).toBeCloseTo(0.4, 1);
   });
 
-  it("filters out non-qwencloud models", async () => {
+  it("includes all models except non-chat families", async () => {
     (fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
       new Response(
         JSON.stringify({
           data: [
-            { id: "qwencloud/qwen3.7-plus", name: "Qwen3.7 Plus" },
-            { id: "openai/gpt-5", name: "GPT-5" },
+            { id: "qwen3.7-plus", name: "Qwen3.7 Plus" },
+            { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro" },
           ],
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
     );
     const result = await fetchRemoteModels({ apiKey: "test_key" });
-    expect(result).toHaveLength(1);
-    expect(result![0].id).toBe("qwencloud/qwen3.7-plus");
+    expect(result).toHaveLength(2);
+    expect(result![0].id).toBe("qwen3.7-plus");
+    expect(result![1].id).toBe("deepseek-v4-pro");
   });
 
   it("filters out non-chat model families (wan, happyhorse)", async () => {
@@ -190,9 +189,9 @@ describe("fetchRemoteModels", () => {
       new Response(
         JSON.stringify({
           data: [
-            { id: "qwencloud/qwen3.7-plus", name: "Qwen3.7 Plus" },
-            { id: "qwencloud/wan2.7-image", name: "Wan2.7 Image" },
-            { id: "qwencloud/happyhorse-1.1-t2v", name: "HappyHorse" },
+            { id: "qwen3.7-plus", name: "Qwen3.7 Plus" },
+            { id: "wan2.7-image", name: "Wan2.7 Image" },
+            { id: "happyhorse-1.1-t2v", name: "HappyHorse" },
           ],
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
@@ -200,19 +199,19 @@ describe("fetchRemoteModels", () => {
     );
     const result = await fetchRemoteModels({ apiKey: "test_key" });
     expect(result).toHaveLength(1);
-    expect(result![0].id).toBe("qwencloud/qwen3.7-plus");
+    expect(result![0].id).toBe("qwen3.7-plus");
   });
 
   it("uses static model fallback values for missing fields", async () => {
     (fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
-      new Response(JSON.stringify({ data: [{ id: "qwencloud/qwen3.7-plus" }] }), {
+      new Response(JSON.stringify({ data: [{ id: "qwen3.7-plus" }] }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       }),
     );
     const result = await fetchRemoteModels({ apiKey: "test_key" });
     expect(result).toHaveLength(1);
-    const staticModel = MODELS.find((m) => m.id === "qwencloud/qwen3.7-plus");
+    const staticModel = MODELS.find((m) => m.id === "qwen3.7-plus");
     expect(result![0].contextWindow).toBe(staticModel!.contextWindow);
     expect(result![0].maxTokens).toBe(staticModel!.maxTokens);
     expect(result![0].cost.input).toBe(staticModel!.cost.input);
@@ -224,7 +223,7 @@ describe("fetchRemoteModels", () => {
         JSON.stringify({
           data: [
             {
-              id: "qwencloud/non-reasoning-model",
+              id: "non-reasoning-model",
               reasoning: false,
             },
           ],
@@ -269,7 +268,7 @@ describe("resolveModels", () => {
         JSON.stringify({
           data: [
             {
-              id: "qwencloud/qwen3.7-plus",
+              id: "qwen3.7-plus",
               name: "Qwen3.7 Plus Updated",
             },
           ],
@@ -279,7 +278,7 @@ describe("resolveModels", () => {
     );
     const result = await resolveModels("test_key");
     expect(result).toHaveLength(1);
-    expect(result[0].id).toBe("qwencloud/qwen3.7-plus");
+    expect(result[0].id).toBe("qwen3.7-plus");
     expect(result[0].name).toBe("Qwen3.7 Plus Updated");
   });
 });

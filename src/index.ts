@@ -16,7 +16,7 @@
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { resolveApiBase, PROVIDER_NAME, ENV_API_KEY } from "./env.js";
+import { resolveApiBase, ENV_API_KEY, PROVIDER_NAME } from "./env.js";
 import { resolveApiKey } from "./auth.js";
 import { resolveModels } from "./models.js";
 import { handleQwenCloudError } from "./error-handler.js";

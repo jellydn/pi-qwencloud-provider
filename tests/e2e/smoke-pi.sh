@@ -32,11 +32,12 @@ run_test() {
   local name="$1" model="$2" prompt="$3" expected="$4"
   echo -n "  $name ... "
 
-  # Use pi with the QwenCloud provider extension
+  # Use pi with the QwenCloud provider extension.
+  # Model IDs are prefix-free; pi scopes via provider/model format.
   output=$(QWENCLOUD_API_KEY="$API_KEY" \
     timeout "$TIMEOUT" pi --no-extensions \
     -e "$PROVIDER_PATH" \
-    --model "qwencloud/$model" \
+    --model "qw/$model" \
     --no-tools \
     -p "$prompt" 2>&1) || true
 

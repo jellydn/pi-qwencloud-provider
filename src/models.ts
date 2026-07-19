@@ -88,7 +88,9 @@ export const QWENCLOUD_OPENAI_COMPAT: QwenCloudOpenAICompat = {
 /**
  * QwenCloud model configuration.
  *
- * Model IDs use the full QwenCloud slug (e.g. "qwencloud/qwen3.7-plus").
+ * Model IDs are the API model names (e.g. "qwen3.7-plus"). pi references
+ * them as `qw/<id>` (provider/model format). The qw/ prefix
+ * is NOT part of the model ID — it's the provider namespace.
  *
  * Note: image generation (Wan) and video generation (HappyHorse) models
  * are included in the catalog for reference but use separate API endpoints
@@ -125,7 +127,7 @@ interface ModelConfigBase extends Omit<ModelConfig, "compat"> {
 const MODELS_BASE: readonly ModelConfigBase[] = [
   // ── Qwen Text Models ─────────────────────────────────────────────────
   {
-    id: "qwencloud/qwen3.8-max-preview",
+    id: "qwen3.8-max-preview",
     name: "Qwen3.8 Max Preview (QwenCloud)",
     reasoning: true,
     input: ["text"],
@@ -136,7 +138,7 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
     thinkingLevelMap: DEFAULT_THINKING_LEVEL_MAP,
   },
   {
-    id: "qwencloud/qwen3.7-plus",
+    id: "qwen3.7-plus",
     name: "Qwen3.7 Plus (QwenCloud)",
     reasoning: true,
     input: ["text"],
@@ -147,7 +149,7 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
     thinkingLevelMap: DEFAULT_THINKING_LEVEL_MAP,
   },
   {
-    id: "qwencloud/qwen3.7-max",
+    id: "qwen3.7-max",
     name: "Qwen3.7 Max (QwenCloud)",
     reasoning: true,
     input: ["text"],
@@ -157,7 +159,7 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
     thinkingLevelMap: DEFAULT_THINKING_LEVEL_MAP,
   },
   {
-    id: "qwencloud/qwen3.6-flash",
+    id: "qwen3.6-flash",
     name: "Qwen3.6 Flash (QwenCloud)",
     reasoning: true,
     input: ["text"],
@@ -169,7 +171,7 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
   },
   // ── DeepSeek Models ──────────────────────────────────────────────────
   {
-    id: "qwencloud/deepseek-v4-pro",
+    id: "deepseek-v4-pro",
     name: "DeepSeek V4 Pro (QwenCloud)",
     reasoning: true,
     input: ["text"],
@@ -182,7 +184,7 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
   },
   // ── Zhipu AI Models ─────────────────────────────────────────────────
   {
-    id: "qwencloud/glm-5.2",
+    id: "glm-5.2",
     name: "GLM-5.2 (QwenCloud)",
     reasoning: true,
     input: ["text"],
@@ -197,7 +199,7 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
   // included in the catalog for model discovery. Placeholder context/token
   // values prevent potential division-by-zero in pi's UI calculations.
   {
-    id: "qwencloud/wan2.7-image",
+    id: "wan2.7-image",
     name: "Wan2.7 Image (QwenCloud)",
     reasoning: false,
     input: ["text"],
@@ -207,7 +209,7 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
     thinkingLevelMap: NO_THINKING_MAP,
   },
   {
-    id: "qwencloud/wan2.7-image-pro",
+    id: "wan2.7-image-pro",
     name: "Wan2.7 Image Pro (QwenCloud)",
     reasoning: false,
     input: ["text"],
@@ -218,7 +220,7 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
   },
   // ── HappyHorse Video Generation Models ───────────────────────────────
   {
-    id: "qwencloud/happyhorse-1.1-i2v",
+    id: "happyhorse-1.1-i2v",
     name: "HappyHorse 1.1 Image-to-Video (QwenCloud)",
     reasoning: false,
     input: ["text"],
@@ -228,7 +230,7 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
     thinkingLevelMap: NO_THINKING_MAP,
   },
   {
-    id: "qwencloud/happyhorse-1.1-t2v",
+    id: "happyhorse-1.1-t2v",
     name: "HappyHorse 1.1 Text-to-Video (QwenCloud)",
     reasoning: false,
     input: ["text"],
@@ -238,7 +240,7 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
     thinkingLevelMap: NO_THINKING_MAP,
   },
   {
-    id: "qwencloud/happyhorse-1.1-r2v",
+    id: "happyhorse-1.1-r2v",
     name: "HappyHorse 1.1 Reference-to-Video (QwenCloud)",
     reasoning: false,
     input: ["text"],
@@ -367,8 +369,8 @@ export interface RemoteModelsOptions {
  * `undefined`.
  *
  * The endpoint follows the OpenAI-compatible format: `{ data: [{ id, ... }] }`
- * or a bare array `[{ id, ... }]`. Only models with `qwencloud/` prefixed IDs
- * are included.
+ * or a bare array `[{ id, ... }]`. Non-chat model families (wan, happyhorse,
+ * qwen-image) are excluded.
  */
 export async function fetchRemoteModels(
   options: RemoteModelsOptions = {},
@@ -405,8 +407,8 @@ export async function fetchRemoteModels(
 
     const parsed = rawList.reduce<ModelConfig[]>((acc, raw) => {
       const id = stringValue(raw?.id);
-      // Only include qwencloud/-prefixed chat models (exclude image/video families).
-      if (!id?.startsWith("qwencloud/") || isNonChatModel(id)) return acc;
+      // Exclude non-chat families (image/video generation models).
+      if (!id || isNonChatModel(id)) return acc;
       const model = parseRemoteModel(raw, staticById.get(id));
       if (model) acc.push(model);
       return acc;

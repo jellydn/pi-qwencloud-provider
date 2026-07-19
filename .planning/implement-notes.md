@@ -43,7 +43,7 @@ Ran 7 tests against live API with Token Plan Lite key:
 |---------|-----------|-----------|
 | Auth | WorkOS OAuth + static API keys | Static API keys only |
 | API base | `https://api.cline.bot/api/v1` | Token Plan endpoint |
-| Model prefix | `cline-pass/` | `qwencloud/` |
+| Model prefix | `cline-pass/` | None — bare API names (pi scopes via `qwencloud/<id>`) |
 | Thinking off | Maps to `"none"` | Maps to `"none"` (verified) |
 | Developer role | Not supported | Supported |
 | Error types | not_subscribed, auth_expired, rate_limited | + insufficient_quota |

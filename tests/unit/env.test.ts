@@ -11,7 +11,7 @@ import {
 
 describe("constants", () => {
   it("exports correct provider name", () => {
-    expect(PROVIDER_NAME).toBe("qwencloud");
+    expect(PROVIDER_NAME).toBe("qw");
   });
 
   it("exports correct env var name", () => {
