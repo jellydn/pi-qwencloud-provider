@@ -1,0 +1,14 @@
+{
+  "plugins": ["typescript", "unicorn", "oxc", "import", "jest"],
+  "rules": {
+    "unicorn/consistent-function-scoping": "off"
+  },
+  "overrides": [
+    {
+      "files": ["tests/**/*.test.ts"],
+      "rules": {
+        "unicorn/consistent-function-scoping": "off"
+      }
+    }
+  ]
+}
