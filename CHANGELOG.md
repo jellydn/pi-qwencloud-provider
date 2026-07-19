@@ -31,4 +31,4 @@ Initial release — QwenCloud provider for pi.
 - Non-chat models (Wan, HappyHorse) filtered from dynamic discovery
 - 86 unit tests + E2E smoke tests
 
-> **Model availability**: `deepseek-v4-pro` is **not confirmed** against the live API — a request to `qwencloud/deepseek-v4-pro` returned `404 model_not_found` at publish time. The catalog lists it as a reference entry; verify the exact slug via the `/models` endpoint or your QwenCloud Token Plan before relying on it.
+> **Model availability**: All catalog slugs (qwen3.8-max-preview, qwen3.7-plus/max, qwen3.6-flash, deepseek-v4-pro, glm-5.2, wan2.7-image[-pro], happyhorse-1.1-i2v/t2v/r2v) match the official QwenCloud Token Plan model list. If a request returns `404 model_not_found`, it is a transient plan/API issue — re-run `pi /login` and confirm your plan status at home.qwencloud.com.
