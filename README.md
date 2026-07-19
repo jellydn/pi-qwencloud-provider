@@ -45,7 +45,7 @@ pnpm add pi-qwencloud-provider
 - **API key auto-discovery** from the `QWENCLOUD_API_KEY` env var or `~/.pi/agent/auth.json`
 - **Dynamic model discovery** — fetches the live model list from the QwenCloud `/models` endpoint at startup (5s timeout), falling back to a curated static list on error
 - **`/login` integration** — opens the QwenCloud dashboard and prompts for a paste; keys are sanitized (terminal paste wrappers and control chars stripped)
-- **Modular architecture** — 8 focused source modules (`env`, `auth`, `models`, `oauth`, `error-handler`, `errors`, `utils`) + entry point (`index`), all covered by per-module unit tests
+- **Modular architecture** — 12 focused source modules (`env`, `auth`, `thinking`, `catalog`, `discovery`, `models`, `oauth`, `error-handler`, `errors`, `utils`, `wan`) + entry point (`index`), all covered by per-module unit tests
 
 ## Supported Models
 

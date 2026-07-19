@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased
+
+Architecture deepening refactor — 4 structural improvements from architecture review, plus PR review fixes.
+
+### Changed
+
+- **models.ts split into three modules**: `thinking.ts` (reasoning-effort maps + translation interfaces), `catalog.ts` (static model data), `discovery.ts` (fetch/parse/resolveModels). `models.ts` is now a barrel re-export. Data edits (pricing, vision input, new slugs) now touch only `catalog.ts` instead of the old 445-line hotspot.
+- **`walkAuthPaths` collapsed into `resolveApiKey`**: removed the generic `<T>`/extract seam that had only one caller. Walk logic inlined; injectable I/O handles preserved.
+- **`sanitizeApiKey` moved from `env.ts` to `oauth.ts`**: its only caller. Deleted dead `buildEndpointUrl` + `DEFAULT_ENDPOINT` helpers.
+- **Tests split along module seam**: `models.test.ts` split into `catalog.test.ts` (10 tests), `discovery.test.ts` (10 tests), and reduced `models.test.ts` (4 barrel tests). 102 tests across 11 files.
+
+### Fixed
+
+- **Non-chat models now consistently available**: `resolveModels` appends static non-chat models (Wan, HappyHorse) to remote results so they appear regardless of fetch success.
+- **`thinkingMapFor` wired into discovery**: `parseRemoteModel` now calls `thinkingMapFor()` instead of inline ternary for map selection. Single rule, two call sites.
+- **`CONTROL_CHARS_RE` simplified**: from verbose `new RegExp(String.fromCharCode(...))` to `/[\x00-\x1F\x7F]/g`.
+- **Self-dependency removed**: `"pi-qwencloud-provider"` in `dependencies` was a scaffold artefact.
+- **Section rulers added to `thinking.ts`**: visual consistency with the rest of the codebase.
+
+### Internal
+
+- Comprehensive `.planning/codebase/` codemap (7 documents) refreshed post-refactor.
+
 ## 0.1.3
 
 Model capability corrections based on official QwenCloud docs audit (docs.qwencloud.com).
