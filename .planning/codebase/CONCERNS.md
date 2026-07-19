@@ -1,30 +1,41 @@
 # Concerns — pi-qwencloud-provider
 
-## Open Questions
+## Resolved
 
-### 1. `reasoning_effort` vs `enable_thinking`
+### 1. `reasoning_effort` vs `enable_thinking` ✅ (verified)
 
-**Severity:** Medium | **File:** `src/models.ts`
+**Severity:** ~~Medium~~ Resolved | **File:** `src/models.ts`
 
-Research indicates QwenCloud's native DashScope API uses `enable_thinking` (true/false), not `reasoning_effort` (low/medium/high/none). However, smoke testing confirmed the OpenAI-compatible endpoint **does accept `reasoning_effort`** including `"none"`.
+Smoke-tested against live API (2026-07-19): QwenCloud's OpenAI-compatible endpoint at `token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1` **accepts `reasoning_effort`**, including `"none"`. Additionally, omitting the parameter does NOT disable reasoning — `"none"` is required. Therefore `off` maps to `"none"` in all thinking maps.
 
-*Risk:* If QwenCloud changes their OpenAI-compatible layer to align with native DashScope, `reasoning_effort` could stop working. The `enable_thinking` parameter requires `extra_body` in OpenAI SDK, which pi may not support.
+*Residual risk:* If QwenCloud aligns their OpenAI-compatible layer with native DashScope's `enable_thinking`, `reasoning_effort` could stop working. Monitor API behavior on updates.
 
-### 2. Image/Video Models in Chat Catalog
+### 2. Image/Video Models in Chat Catalog ✅ (mitigated)
 
-**Severity:** Low | **File:** `src/models.ts`
+**Severity:** ~~Low~~ Resolved | **File:** `src/models.ts`
 
-`wan2.7-image`, `wan2.7-image-pro`, and `happyhorse-*` models use separate API endpoints (image/video generation), not `/chat/completions`. They're included with placeholder `contextWindow: 8192` / `maxTokens: 4096` to avoid zero-value issues.
+`fetchRemoteModels` now filters out non-chat families (`wan`, `happyhorse`, `qwen-image`) via `isNonChatModel()`, preventing dynamic registration. The static catalog intentionally retains them (user requested "all models") with `reasoning: false` and placeholder context/maxTokens values.
 
-*Risk:* pi's model selector shows these models. If a user selects one for chat, the API will return an error. No way to filter them from the chat model list without pi platform changes.
+*Residual risk:* pi's model selector still shows these from the static catalog. Selecting one for chat will return an API error. Mitigation would require pi platform changes to filter by model capability.
 
-### 3. Pricing Estimates are Approximate
+### 3. Pricing Estimates ✅ (corrected)
 
-**Severity:** Low | **File:** `src/models.ts`
+**Severity:** ~~Low~~ Resolved | **File:** `src/models.ts`
 
-Cost values in the static catalog are estimates based on publicly available Qwen pricing. QwenCloud's Token Plan uses credit-based billing (not per-token), so these values are only used for pi's usage display.
+Pricing corrected based on research findings (findings.md):
+- `qwen3.6-flash`: 0.07/0.14 → 0.25/1.50 (official Token Plan ≤256K tier)
+- `glm-5.2`: 1.4/4.4 → 1.10/3.85, cacheRead 0.26 → 0.275
+- `deepseek-v4-pro`: flagged as unconfirmed estimate in comments
 
-*Risk:* Misleading cost estimates in pi's UI. Token Plan users see credit consumption, not dollar costs.
+Note: Token Plan uses credit-based billing, not per-token. These values are for pi's usage display only.
+
+### 5. No Dynamic Model Discovery Filter for Non-Chat ✅ (fixed)
+
+**Severity:** ~~Low~~ Resolved | **File:** `src/models.ts`
+
+Added `NON_CHAT_FAMILIES` array and `isNonChatModel()` function with case-insensitive matching. `fetchRemoteModels` now excludes models whose IDs contain `wan`, `happyhorse`, or `qwen-image`.
+
+## Still Open
 
 ### 4. 403 Error Classification is Broad
 
@@ -35,15 +46,7 @@ All 403 errors are classified as `auth_expired` ("plan expired"). A 403 from Qwe
 - Region restrictions
 - Access denied for a specific model
 
-*Risk:* Users get a misleading "plan expired" message when the real issue is model access.
-
-### 5. No Dynamic Model Discovery for Image/Video
-
-**Severity:** Low | **File:** `src/models.ts`
-
-The `/models` endpoint filter (`id.startsWith("qwencloud/")`) would match Wan and HappyHorse models if they appear in the API response. If the remote `/models` endpoint returns them, they'll be registered as chat models.
-
-*Mitigation:* Static catalog includes them with proper metadata. Remote models without a static fallback would get `DEFAULT_THINKING_LEVEL_MAP` and `reasoning: true` (the default), which is inaccurate for image/video models.
+*Risk:* Users get a misleading "plan expired" message when the real issue is model access. Consider adding more pattern matching to distinguish plan-expired 403s from other 403s.
 
 ### 6. No Streaming E2E Test
 
