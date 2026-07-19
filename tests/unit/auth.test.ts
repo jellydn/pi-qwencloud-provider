@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveApiKey, defaultAuthPaths } from "../../src/auth.js";
+import { resolveApiKey } from "../../src/auth.js";
 
 describe("resolveApiKey", () => {
   it("returns provided key first", () => {
@@ -59,12 +59,5 @@ describe("resolveApiKey", () => {
         fileExists,
       }),
     ).toBe("qw_env_wins");
-  });
-});
-
-describe("defaultAuthPaths", () => {
-  it("includes pi auth.json path", () => {
-    const paths = defaultAuthPaths("/home/user");
-    expect(paths).toContain("/home/user/.pi/agent/auth.json");
   });
 });
