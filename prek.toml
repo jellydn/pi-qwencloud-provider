@@ -1,0 +1,20 @@
+# Configuration file for `prek`, a git hook framework written in Rust.
+# See https://prek.j178.dev for more information.
+#:schema https://www.schemastore.org/prek.json
+
+[[repos]]
+repo = "builtin"
+hooks = [
+    { id = "trailing-whitespace" },
+    { id = "end-of-file-fixer" },
+    { id = "check-added-large-files" },
+]
+
+# Local hooks run the repo's own toolchain (oxlint + oxfmt + tsc).
+[[repos]]
+repo = "local"
+hooks = [
+    { id = "lint", name = "lint (oxlint)", entry = "npm run lint", language = "system", files = '''\.(ts|js)$''', pass_filenames = false },
+    { id = "format-check", name = "format check (oxfmt)", entry = "npm run format:check", language = "system", files = '''\.(ts|js)$''', pass_filenames = false },
+    { id = "typecheck", name = "typecheck (tsc)", entry = "npm run typecheck", language = "system", files = '''\.(ts|js)$''', pass_filenames = false },
+]
