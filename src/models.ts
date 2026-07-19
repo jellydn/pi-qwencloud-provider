@@ -33,7 +33,9 @@ export const DEFAULT_THINKING_LEVEL_MAP: ThinkingLevelMap = {
 };
 
 /**
- * DeepSeek V4 Pro thinking level map — only supports "high" (and "none").
+ * DeepSeek V4 Pro thinking level map.
+ * Chat API only accepts `high` / `max` for DeepSeek; `xhigh` is mapped
+ * to `max` per docs (low/medium → high, xhigh → max on the server side).
  */
 export const DEEPSEEK_V4_THINKING_MAP: ThinkingLevelMap = {
   off: "none",
@@ -41,7 +43,7 @@ export const DEEPSEEK_V4_THINKING_MAP: ThinkingLevelMap = {
   low: null,
   medium: null,
   high: "high",
-  xhigh: "high",
+  xhigh: "max",
 };
 
 /**
@@ -123,6 +125,8 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
     reasoning: true,
     input: ["text"],
     // Pricing not publicly documented for Token Plan; estimates provided.
+    // qwen3.8-max-preview is not yet in the official Token Plan pricing table
+    // (which tops out at qwen3.7-max). These values are approximate.
     cost: { input: 2.5, output: 7.5, cacheRead: 0.5, cacheWrite: 3.125 },
     contextWindow: 262_144,
     maxTokens: 131_072,
@@ -154,7 +158,8 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
     name: "Qwen3.6 Flash (QwenCloud)",
     reasoning: true,
     input: ["text"],
-    cost: { input: 0.07, output: 0.14, cacheRead: 0.007, cacheWrite: 0.07 },
+    // Official Token Plan pricing (≤256K tier): 0.25 / 1.50.
+    cost: { input: 0.25, output: 1.5, cacheRead: 0.025, cacheWrite: 0.25 },
     contextWindow: 131_072,
     maxTokens: 131_072,
     thinkingLevelMap: DEFAULT_THINKING_LEVEL_MAP,
@@ -165,6 +170,8 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
     name: "DeepSeek V4 Pro (QwenCloud)",
     reasoning: true,
     input: ["text"],
+    // Pricing estimate — Token Plan rate unconfirmed for this model.
+    // Alibaba China aggregator lists 0.435 / 0.87, but Token Plan may differ.
     cost: { input: 1.74, output: 3.48, cacheRead: 0.0145, cacheWrite: 0 },
     contextWindow: 1_000_000,
     maxTokens: 384_000,
@@ -176,7 +183,8 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
     name: "GLM-5.2 (QwenCloud)",
     reasoning: true,
     input: ["text"],
-    cost: { input: 1.4, output: 4.4, cacheRead: 0.26, cacheWrite: 0 },
+    // Official Token Plan pricing: 1.10 / 3.85, cache read 0.275.
+    cost: { input: 1.1, output: 3.85, cacheRead: 0.275, cacheWrite: 0 },
     contextWindow: 200_000,
     maxTokens: 131_072,
     thinkingLevelMap: GLM_52_THINKING_MAP,
@@ -251,6 +259,21 @@ export const MODELS: readonly ModelConfig[] = MODELS_BASE.map((model) => ({
  */
 export function modelIds(): string[] {
   return MODELS.map((m) => m.id);
+}
+
+// ─── Non-Chat Model Filtering ──────────────────────────────────────────────
+
+/**
+ * Non-chat model families that should NOT be registered for chat completions.
+ * These use separate async task APIs (image/video generation), not
+ * `/chat/completions`. Filtered out of dynamic discovery results.
+ */
+const NON_CHAT_FAMILIES = ["wan", "happyhorse", "qwen-image"];
+
+/** Check whether a model ID belongs to a non-chat family. */
+function isNonChatModel(id: string): boolean {
+  const lower = id.toLowerCase();
+  return NON_CHAT_FAMILIES.some((family) => lower.includes(family));
 }
 
 // ─── Dynamic Model Discovery ───────────────────────────────────────────────
@@ -379,7 +402,8 @@ export async function fetchRemoteModels(
 
     const parsed = rawList.reduce<ModelConfig[]>((acc, raw) => {
       const id = stringValue(raw?.id);
-      if (!id?.startsWith("qwencloud/")) return acc;
+      // Only include qwencloud/-prefixed chat models (exclude image/video families).
+      if (!id?.startsWith("qwencloud/") || isNonChatModel(id)) return acc;
       const model = parseRemoteModel(raw, staticById.get(id));
       if (model) acc.push(model);
       return acc;

@@ -70,14 +70,14 @@ describe("MODELS", () => {
     expect(map.xhigh).toBe("xhigh");
   });
 
-  it("DeepSeek V4 Pro supports off=none, high/xhigh only", () => {
+  it("DeepSeek V4 Pro supports off=none, high/xhigh=max", () => {
     const model = MODELS.find((m) => m.id === "qwencloud/deepseek-v4-pro")!;
     const map = model.thinkingLevelMap;
     expect(map.off).toBe("none");
     expect(map.low).toBeNull();
     expect(map.medium).toBeNull();
     expect(map.high).toBe("high");
-    expect(map.xhigh).toBe("high");
+    expect(map.xhigh).toBe("max");
   });
 
   it("qwen3.6-flash supports reasoning with default map", () => {
@@ -175,6 +175,24 @@ describe("fetchRemoteModels", () => {
           data: [
             { id: "qwencloud/qwen3.7-plus", name: "Qwen3.7 Plus" },
             { id: "openai/gpt-5", name: "GPT-5" },
+          ],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    const result = await fetchRemoteModels({ apiKey: "test_key" });
+    expect(result).toHaveLength(1);
+    expect(result![0].id).toBe("qwencloud/qwen3.7-plus");
+  });
+
+  it("filters out non-chat model families (wan, happyhorse)", async () => {
+    (fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: [
+            { id: "qwencloud/qwen3.7-plus", name: "Qwen3.7 Plus" },
+            { id: "qwencloud/wan2.7-image", name: "Wan2.7 Image" },
+            { id: "qwencloud/happyhorse-1.1-t2v", name: "HappyHorse" },
           ],
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
