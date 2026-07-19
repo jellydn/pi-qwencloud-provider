@@ -2,57 +2,57 @@
 
 ## Runtime
 
-| Component | Version/Details |
-|-----------|-----------------|
-| **Language** | TypeScript 7.x (strict mode) |
-| **Runtime** | Node.js ≥22 |
-| **Module system** | ESM (`"type": "module"`) |
-| **Target** | ES2022 |
-| **Module resolution** | bundler |
+| Category | Choice | Version |
+|---|---|---|
+| Language | TypeScript | 7.0 |
+| Runtime | Node.js | ≥22 |
+| Module system | ESM (`"type": "module"`) | — |
+| Module resolution | bundler | — |
+| Compile target | ES2022 | — |
 
 ## Dependencies
 
-### Peer (pi platform)
+### Peer (pi runtime — available at extension load time)
 
 | Package | Purpose |
-|---------|---------|
-| `@earendil-works/pi-ai` | OAuth types (`OAuthCredentials`, `OAuthLoginCallbacks`) |
-| `@earendil-works/pi-coding-agent` | `ExtensionAPI` type, `registerProvider`, event hooks |
+|---|---|
+| `@earendil-works/pi-ai` | Provider types (`ExtensionAPI`, `OAuthCredentials`, `Model<Api>`, `OpenAICompletionsCompat`) |
+| `@earendil-works/pi-coding-agent` | Extension entry point, slash commands, event hooks |
 
 ### Dev
 
+| Package | Purpose | Version |
+|---|---|---|
+| `typescript` | Type-checking (`tsc --noEmit`) | ^7.0 |
+| `vitest` | Unit test runner | ^4.1.5 |
+| `oxlint` | Linting (TypeScript, unicorn, import, jest plugins) | ^1.71 |
+| `oxfmt` | Formatting (in-place + `--check` in CI) | ^0.59 |
+| `bumpp` | Version bump + commit + tag + push | ^11.1 |
+| `np` | npm publish gating (branch check, test script, release draft) | ^12.0 |
+| `@types/node` | Node.js type stubs | ^26.0 |
+
+### Runtime (production — bundled via src/)
+
 | Package | Purpose |
-|---------|---------|
-| `vitest` ^4.1.5 | Unit test runner |
-| `typescript` ^7.0.0 | Type checking (`tsc --noEmit`) |
-| `oxlint` ^1.71.0 | Linting (typescript, unicorn, oxc, import, jest plugins) |
-| `oxfmt` ^0.59.0 | Code formatting |
-| `bumpp` ^11.1.0 | Version bumping (release workflow) |
-| `np` ^12.0.0 | npm publish (gated) |
-| `@types/node` ^26.0.1 | Node.js type definitions |
+|---|---|
+| `pi-qwencloud-provider` | Self-reference (npm package metadata) |
 
-## No Runtime Dependencies
+No external runtime dependencies beyond Node.js stdlib (`node:fs`, `node:os`, `node:path`, `node:fs/promises`).
 
-The provider has **zero runtime dependencies** beyond the pi platform peer deps. All functionality is implemented using Node.js built-ins:
-
-- `node:fs` (`existsSync`, `readFileSync`) — auth file resolution
-- `node:os` (`homedir`) — default auth path resolution
-- `node:path` (`join`) — path construction
-- Global `fetch` — API calls (model discovery)
-- `AbortController` / `AbortSignal.timeout` — request timeouts
-
-## Build
-
-**No build step.** pi loads `.ts` source directly via `tsconfig.json` (`noEmit: true`). The `main` field in `package.json` points to `src/index.ts`.
-
-## Configuration Files
+## Configuration
 
 | File | Purpose |
-|------|---------|
-| `tsconfig.json` | TypeScript strict mode, ES2022, bundler resolution |
-| `vitest.config.ts` | Test include pattern: `tests/**/*.test.ts` |
-| `.oxlintrc.json` | Lint rules (disables `consistent-function-scoping` in tests) |
-| `.oxfmtrc.json` | Formatter config (empty — all defaults) |
-| `package.json` | `pi.extensions: ["./src/index.ts"]` for pi discovery |
-| `.npmignore` | Excludes `.git`, `.github`, `.planning`, `node_modules` |
-| `prek.toml` | Pre-commit hooks (oxlint + oxfmt) |
+|---|---|
+| `tsconfig.json` | `strict: true`, `noEmit: true`, `moduleResolution: "bundler"`. pi loads `.ts` source directly. |
+| `vitest.config.ts` | Includes `tests/**/*.test.ts` |
+| `.oxlintrc.json` | Disables `unicorn/consistent-function-scoping` in test files |
+| `.oxfmtrc.json` | Formatter config |
+| `prek.toml` | Pre-commit hooks (oxlint + oxfmt --check) |
+| `package.json` | `"pi": { "extensions": ["./src/index.ts"] }` — pi extension entry point |
+| `renovate.json` | Dependency update automation |
+
+## API Surface
+
+The provider exposes a single `openai-completions` API stream via pi's built-in SSE handling. No custom streaming protocol — all SSE parsing, tool calls, and usage tracking are handled by pi's `openai-completions` implementation.
+
+The Wan image generation feature uses a separate synchronous REST endpoint (not chat/completions) — called via a pi slash command (`/wan`), not through the provider's streaming pipeline.

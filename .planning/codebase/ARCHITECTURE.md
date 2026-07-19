@@ -1,130 +1,70 @@
 # Architecture — pi-qwencloud-provider
 
-## Pattern
+## Pattern: Pure-logic / IOC separation
 
-**Pure-logic IOC (Inversion of Control)** — all I/O is injectable for testability. Modules accept options objects with injectable `fetch`, `readFile`, `fileExists`, `homeDir`, etc. No side effects at import time.
+Every module that touches I/O accepts injectable dependencies (fetch, file read, env) so the logic is testable without the pi runtime. This is the same pattern as the clinepass provider (ADR 0002).
 
-## Layer Diagram
-
-```
-┌──────────────────────────────────────────────┐
-│                  pi Platform                   │
-│         (ExtensionAPI, OAuth, streaming)      │
-└─────────────────────┬────────────────────────┘
-                      │ registerProvider / on("message_end")
-┌─────────────────────▼────────────────────────┐
-│               src/index.ts                     │
-│        Entry point, wires everything          │
-│  - resolveApiBase() → resolveApiKey()         │
-│  - resolveModels() → registerProvider()       │
-│  - pi.on("message_end", errorHandler)         │
-└──┬────────┬────────┬────────┬────────────────┘
-   │        │        │        │
-   ▼        ▼        ▼        ▼
-┌──────┐ ┌──────┐ ┌──────┐ ┌──────────────┐
-│ env  │ │ auth │ │models│ │ error-handler │
-│      │ │      │ │      │ │      │        │
-│consts│ │keys  │ │static│ │ errors.ts    │
-│base  │ │files │ │+dyn  │ │ classify     │
-│sanit │ │      │ │fetch │ │              │
-└──────┘ └──┬───┘ └──────┘ └──────────────┘
-            │
-       ┌────▼────┐
-       │  utils   │
-       │  guards  │
-       └─────────┘
-
-┌──────────┐
-│  oauth    │
-│  login    │
-│  refresh  │
-│  getKey   │
-└───────────┘
-```
-
-## Module Dependency Graph
+## Module Graph
 
 ```
-index.ts
- ├── env.ts         (constants, resolveApiBase, sanitizeApiKey)
- ├── auth.ts        → utils.ts, env.ts
- ├── models.ts      → utils.ts, env.ts
- ├── oauth.ts       → env.ts
- ├── error-handler.ts → errors.ts, env.ts
- └── errors.ts      (self-contained)
-
-No circular dependencies. utils.ts is the only shared dependency.
+index.ts (entry — ExtensionAPI)
+  ├── env.ts      (constants + resolveApiBase)
+  ├── auth.ts     (resolveApiKey — env var + auth.json walk)
+  ├── models.ts   (barrel re-export)
+  │   ├── thinking.ts   (reasoning-effort maps + translation interface)
+  │   ├── catalog.ts    (static model data + compat + filtering)
+  │   └── discovery.ts  (fetch / parse / resolveModels)
+  ├── oauth.ts    (login flow, sanitizeApiKey, static credential helpers)
+  ├── error-handler.ts  (filter → classify → deliver via message_end event)
+  │   └── errors.ts     (classification logic — pure functions)
+  ├── wan.ts      (Wan image generation API call + download)
+  └── utils.ts    (isRecord, stringValue, numberValue, booleanValue)
 ```
-
-## Key Abstractions
-
-### `src/env.ts` — Constants & Base Resolution
-
-| Export | Purpose |
-|--------|---------|
-| `PROVIDER_NAME` | `"qwencloud"` |
-| `ENV_API_KEY` | `"QWENCLOUD_API_KEY"` |
-| `DEFAULT_API_BASE` | Token Plan endpoint |
-| `resolveApiBase(env?)` | Override via `QWENCLOUD_API_BASE` |
-| `sanitizeApiKey(input)` | Strip paste wrappers + control chars |
-| `buildEndpointUrl(base)` | Append `/chat/completions` |
-
-### `src/auth.ts` — API Key Resolution
-
-- `resolveApiKey(providedKey?, options?)` — priority chain
-- `walkAuthPaths(options, extract)` — generic JSON file walker
-- `defaultAuthPaths(home)` — `~/.pi/agent/auth.json`
-
-### `src/models.ts` — Model Catalog
-
-- `MODELS` — 11 static models with full metadata
-- `ThinkingLevelMap` — 6-level matrix (off/minimal/low/medium/high/xhigh)
-- `fetchRemoteModels(options)` — dynamic `/models` fetch (5s timeout)
-- `resolveModels(apiKey, options)` — remote-first, static fallback
-
-### `src/oauth.ts` — Login Flow
-
-- `login(callbacks)` — open dashboard, prompt paste
-- `refreshToken(creds)` — no-op (static keys don't expire)
-- `getApiKey(creds)` — returns `credentials.access`
-
-### `src/errors.ts` + `src/error-handler.ts` — Error Surface
-
-- `classifyQwenCloudError(message)` → `{ type, message }`
-- `handleQwenCloudError(event, ctx)` — filter → classify → notify
-
-### `src/utils.ts` — Type Guards
-
-- `isRecord`, `stringValue`, `numberValue`, `booleanValue`
 
 ## Data Flow
 
+### Chat Completions (provider streaming)
+
 ```
-User runs pi /login
-  → oauth.ts: login()
-    → Opens https://home.qwencloud.com
-    → Prompts for API key
-    → Returns OAuthCredentials (10yr expiry)
-
-pi makes chat request
-  → openai-completions handler
-    → Auth: Bearer <key from credentials or env>
-    → Model: qwencloud/<slug>
-    → reasoning_effort: from thinkingLevelMap
-    → POST https://.../compatible-mode/v1/chat/completions
-
-On error:
-  → message_end event fires
-  → error-handler.ts filters for qwencloud
-  → errors.ts classifies (401/403/429/quota)
-  → ctx.ui.notify() or console.error()
+pi agent
+  → QwenCloud /chat/completions (SSE)
+  → pi's openai-completions streaming (built-in)
+  → on "message_end" → handleQwenCloudError → classifyQwenCloudError
+  → ctx.ui.notify (friendly message) or console.error fallback
 ```
 
-## Entry Points
+### Model Discovery (startup)
 
-| Path | Purpose |
-|------|---------|
-| `src/index.ts` | pi extension entry (default export) |
-| `tests/unit/*.test.ts` | Unit tests (Vitest) |
-| `tests/type/contract.ts` | Compile-time ExtensionAPI contract |
-| `tests/e2e/smoke.sh` | API smoke test (curl) |
+```
+index.ts default export
+  → resolveApiKey()              // auth.ts
+  → resolveModels(apiKey, ...)   // discovery.ts
+      → fetchRemoteModels()       // GET /models (5s timeout)
+          → parseRemoteModel()    // fallback: static catalog
+      → fallback: MODELS array    // catalog.ts
+  → pi.registerProvider("qw", { models })
+```
+
+### Wan Image Generation (slash command)
+
+```
+pi /wan <prompt>
+  → wan.ts generateAndDownloadWanImage()
+      → generateWanImage()      // POST Wan endpoint
+      → downloadWanImage()       // GET OSS URL → local file
+  → ctx.ui.notify("Wan image saved: ...")
+```
+
+## Key Design Decisions
+
+1. **Barrel re-export for models** (`src/models.ts`). The old 445-line monolithic models.ts was split into `thinking.ts` (reasoning maps), `catalog.ts` (data), and `discovery.ts` (I/O). The barrel preserves all existing exports so no consumer changes.
+
+2. **`reasoningEffortFor(map, level)`** — single translation interface for pi thinking levels → provider reasoning_effort values. Both catalog and discovery use the same maps through the same import surface.
+
+3. **Collapsed walkAuthPaths** — the generic `<T>/extract` seam was removed; walk logic inlined into `resolveApiKey`. Injectable I/O handles kept.
+
+4. **Error surface separation** — `errors.ts` is pure classification (testable); `error-handler.ts` is side-effectful delivery (pi event handler).
+
+5. **Provider name "qw"** — short name avoids model-id clashes with the clinepass provider (both have `deepseek-v4-pro` and `glm-5.2`).
+
+6. **NON_CHAT_FAMILIES filter** — Wan (image) and HappyHorse (video) models are in the catalog but excluded from chat completions discovery.
