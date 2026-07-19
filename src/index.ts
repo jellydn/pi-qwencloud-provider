@@ -53,8 +53,8 @@ export default async function (pi: ExtensionAPI) {
     ...(envApiKey ? { apiKey: envApiKey } : apiKey ? { apiKey } : {}),
     authHeader: true,
     // QwenCloud uses the standard OpenAI Chat Completions format, so pi's
-    // built-in openai-completions streaming handles SSE + tool calls + usage.
-    api: "openai-completions",
+    // built-in OpenAI streaming handles SSE + tool calls + usage.
+    api: "openai",
     oauth: {
       name: "QwenCloud",
       login,
