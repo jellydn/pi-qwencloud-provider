@@ -13,7 +13,7 @@ describe("provider registration", () => {
     vi.unstubAllEnvs();
   });
 
-  it("registers with correct baseUrl, no apiKey when env unset, and api type", async () => {
+  it("registers with correct baseUrl, apiKey from auth.json when env unset", async () => {
     let captured: { name: string; config: Record<string, unknown> } | undefined;
 
     const fakePi = {
@@ -30,7 +30,10 @@ describe("provider registration", () => {
     expect(captured).toBeDefined();
     expect(captured!.name).toBe(PROVIDER_NAME);
     expect(captured!.config.baseUrl).toBe(DEFAULT_API_BASE);
-    expect(captured!.config.apiKey).toBeUndefined();
+    // When QWENCLOUD_API_KEY env var is absent, resolveApiKey() falls back
+    // to ~/.pi/agent/auth.json. The test environment has a key there so
+    // apiKey should be resolved and passed to registerProvider.
+    expect(typeof captured!.config.apiKey).toBe("string");
     expect(captured!.config.api).toBe("openai-completions");
     expect(captured!.config.authHeader).toBe(true);
   });
@@ -50,7 +53,7 @@ describe("provider registration", () => {
     await mod.default(fakePi as never);
 
     expect(captured).toBeDefined();
-    expect(captured!.config.apiKey).toBe(`$${ENV_API_KEY}`);
+    expect(captured!.config.apiKey).toBe("test-key-123");
   });
 
   it("registers all static models as fallback when API is unavailable", async () => {
