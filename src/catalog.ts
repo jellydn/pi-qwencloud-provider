@@ -78,6 +78,20 @@ interface ModelConfigBase extends Omit<ModelConfig, "compat"> {
   compat?: Partial<QwenCloudOpenAICompat>;
 }
 
+/** Shared blueprint for non-chat model entries (image/video generation). */
+function nonChatModel(id: string, name: string): ModelConfigBase {
+  return {
+    id,
+    name,
+    reasoning: false,
+    input: ["text"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 8_192,
+    maxTokens: 4_096,
+    thinkingLevelMap: NO_THINKING_MAP,
+  };
+}
+
 const MODELS_BASE: readonly ModelConfigBase[] = [
   // ── Qwen Text Models ─────────────────────────────────────────────────
   {
@@ -152,57 +166,12 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
   // These use separate API endpoints (not chat/completions) but are
   // included in the catalog for model discovery. Placeholder context/token
   // values prevent potential division-by-zero in pi's UI calculations.
-  {
-    id: "wan2.7-image",
-    name: "Wan2.7 Image (QwenCloud)",
-    reasoning: false,
-    input: ["text"],
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: 8_192,
-    maxTokens: 4_096,
-    thinkingLevelMap: NO_THINKING_MAP,
-  },
-  {
-    id: "wan2.7-image-pro",
-    name: "Wan2.7 Image Pro (QwenCloud)",
-    reasoning: false,
-    input: ["text"],
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: 8_192,
-    maxTokens: 4_096,
-    thinkingLevelMap: NO_THINKING_MAP,
-  },
+  nonChatModel("wan2.7-image", "Wan2.7 Image (QwenCloud)"),
+  nonChatModel("wan2.7-image-pro", "Wan2.7 Image Pro (QwenCloud)"),
   // ── HappyHorse Video Generation Models ───────────────────────────────
-  {
-    id: "happyhorse-1.1-i2v",
-    name: "HappyHorse 1.1 Image-to-Video (QwenCloud)",
-    reasoning: false,
-    input: ["text"],
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: 8_192,
-    maxTokens: 4_096,
-    thinkingLevelMap: NO_THINKING_MAP,
-  },
-  {
-    id: "happyhorse-1.1-t2v",
-    name: "HappyHorse 1.1 Text-to-Video (QwenCloud)",
-    reasoning: false,
-    input: ["text"],
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: 8_192,
-    maxTokens: 4_096,
-    thinkingLevelMap: NO_THINKING_MAP,
-  },
-  {
-    id: "happyhorse-1.1-r2v",
-    name: "HappyHorse 1.1 Reference-to-Video (QwenCloud)",
-    reasoning: false,
-    input: ["text"],
-    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-    contextWindow: 8_192,
-    maxTokens: 4_096,
-    thinkingLevelMap: NO_THINKING_MAP,
-  },
+  nonChatModel("happyhorse-1.1-i2v", "HappyHorse 1.1 Image-to-Video (QwenCloud)"),
+  nonChatModel("happyhorse-1.1-t2v", "HappyHorse 1.1 Text-to-Video (QwenCloud)"),
+  nonChatModel("happyhorse-1.1-r2v", "HappyHorse 1.1 Reference-to-Video (QwenCloud)"),
 ];
 
 export const MODELS: readonly ModelConfig[] = MODELS_BASE.map((model) => ({
