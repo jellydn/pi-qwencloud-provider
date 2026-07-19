@@ -41,7 +41,7 @@ check() {
 }
 
 # ─── Test 1: /models endpoint ────────────────────────────────────────────
-echo -e "${YELLOW}[1/5] Fetch /models endpoint${NC}"
+echo -e "${YELLOW}[1/7] Fetch /models endpoint${NC}"
 MODELS_RESP=$(curl -s -w "\n%{http_code}" \
   -H "Authorization: Bearer $API_KEY" \
   "$API_BASE/models" 2>&1) || true
@@ -65,7 +65,7 @@ done
 
 # ─── Test 2: Basic chat completion (no reasoning) ────────────────────────
 echo ""
-echo -e "${YELLOW}[2/5] Basic chat completion (no reasoning)${NC}"
+echo -e "${YELLOW}[2/7] Basic chat completion (no reasoning)${NC}"
 CHAT1_RESP=$(curl -s -w "\n%{http_code}" \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
@@ -86,7 +86,7 @@ echo "  → Response: \"$CHAT1_CONTENT\""
 
 # ─── Test 3: Reasoning effort = low ──────────────────────────────────────
 echo ""
-echo -e "${YELLOW}[3/5] Chat completion with reasoning_effort=low${NC}"
+echo -e "${YELLOW}[3/7] Chat completion with reasoning_effort=low${NC}"
 CHAT2_RESP=$(curl -s -w "\n%{http_code}" \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
@@ -111,7 +111,7 @@ fi
 
 # ─── Test 4: Reasoning effort = high ─────────────────────────────────────
 echo ""
-echo -e "${YELLOW}[4/5] Chat completion with reasoning_effort=high${NC}"
+echo -e "${YELLOW}[4/7] Chat completion with reasoning_effort=high${NC}"
 CHAT3_RESP=$(curl -s -w "\n%{http_code}" \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
@@ -129,7 +129,7 @@ check "POST chat/completions (reasoning_effort=high)" "$CHAT3_STATUS" "$CHAT3_BO
 
 # ─── Test 5: No reasoning_effort (simulates "off") ───────────────────────
 echo ""
-echo -e "${YELLOW}[5/5] Chat completion WITHOUT reasoning_effort (simulates 'off')${NC}"
+echo -e "${YELLOW}[5/7] Chat completion WITHOUT reasoning_effort (simulates 'off')${NC}"
 CHAT4_RESP=$(curl -s -w "\n%{http_code}" \
   -H "Authorization: Bearer $API_KEY" \
   -H "Content-Type: application/json" \
@@ -150,6 +150,53 @@ if echo "$CHAT4_BODY" | grep -qE "(reasoning_content|reasoning)"; then
   HAS_REASONING="yes"
 fi
 echo "  → Reasoning in response without explicit effort: $HAS_REASONING"
+
+# ─── Test 6: Reasoning effort = "none" (explicit disable) ────────────────
+echo ""
+echo -e "${YELLOW}[6/7] Chat completion with reasoning_effort=\"none\"${NC}"
+CHAT5_RESP=$(curl -s -w "\n%{http_code}" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "qwen3.7-plus",
+    "messages": [{"role": "user", "content": "What is 2+2? Answer in one word."}],
+    "max_tokens": 50,
+    "reasoning_effort": "none"
+  }' \
+  "$API_BASE/chat/completions" 2>&1) || true
+CHAT5_STATUS=$(echo "$CHAT5_RESP" | tail -1)
+CHAT5_BODY=$(echo "$CHAT5_RESP" | sed '$d')
+
+check "POST chat/completions (reasoning_effort=none)" "$CHAT5_STATUS" "$CHAT5_BODY"
+
+# Check if "none" is accepted or rejected
+NONE_ACCEPTED="no"
+if [ "$CHAT5_STATUS" -ge 200 ] && [ "$CHAT5_STATUS" -lt 300 ]; then
+  NONE_ACCEPTED="yes"
+  CHAT5_CONTENT=$(echo "$CHAT5_BODY" | grep -o '"content":"[^"]*"' | head -1 | sed 's/"content":"//;s/"//')
+  echo "  → \"none\" ACCEPTED — content: \"$CHAT5_CONTENT\""
+else
+  NONE_ACCEPTED="no"
+  echo -e "  → \"none\" REJECTED — QwenCloud does not support reasoning_effort=\"none\""
+fi
+
+# ─── Test 7: DeepSeek V4 Pro with reasoning_effort=high ──────────────────
+echo ""
+echo -e "${YELLOW}[7/7] DeepSeek V4 Pro with reasoning_effort=high${NC}"
+CHAT6_RESP=$(curl -s -w "\n%{http_code}" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "deepseek-v4-pro",
+    "messages": [{"role": "user", "content": "What is 2+2? Answer in one word."}],
+    "max_tokens": 50,
+    "reasoning_effort": "high"
+  }' \
+  "$API_BASE/chat/completions" 2>&1) || true
+CHAT6_STATUS=$(echo "$CHAT6_RESP" | tail -1)
+CHAT6_BODY=$(echo "$CHAT6_RESP" | sed '$d')
+
+check "POST chat/completions (deepseek-v4-pro, reasoning_effort=high)" "$CHAT6_STATUS" "$CHAT6_BODY"
 
 # ─── Summary ─────────────────────────────────────────────────────────────
 echo ""

@@ -53,27 +53,27 @@ describe("MODELS", () => {
     }
   });
 
-  it("DEFAULT_THINKING_LEVEL_MAP supports low/medium/high", () => {
-    expect(DEFAULT_THINKING_LEVEL_MAP.off).toBeNull();
+  it("DEFAULT_THINKING_LEVEL_MAP supports off=none, low/medium/high", () => {
+    expect(DEFAULT_THINKING_LEVEL_MAP.off).toBe("none");
     expect(DEFAULT_THINKING_LEVEL_MAP.low).toBe("low");
     expect(DEFAULT_THINKING_LEVEL_MAP.medium).toBe("medium");
     expect(DEFAULT_THINKING_LEVEL_MAP.high).toBe("high");
   });
 
-  it("GLM-5.2 supports low/medium/high/xhigh", () => {
+  it("GLM-5.2 supports off=none, low/medium/high/xhigh", () => {
     const model = MODELS.find((m) => m.id === "qwencloud/glm-5.2")!;
     const map = model.thinkingLevelMap;
-    expect(map.off).toBeNull();
+    expect(map.off).toBe("none");
     expect(map.low).toBe("low");
     expect(map.medium).toBe("medium");
     expect(map.high).toBe("high");
     expect(map.xhigh).toBe("xhigh");
   });
 
-  it("DeepSeek V4 Pro only supports high/xhigh", () => {
+  it("DeepSeek V4 Pro supports off=none, high/xhigh only", () => {
     const model = MODELS.find((m) => m.id === "qwencloud/deepseek-v4-pro")!;
     const map = model.thinkingLevelMap;
-    expect(map.off).toBeNull();
+    expect(map.off).toBe("none");
     expect(map.low).toBeNull();
     expect(map.medium).toBeNull();
     expect(map.high).toBe("high");

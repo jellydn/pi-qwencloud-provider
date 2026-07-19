@@ -20,11 +20,11 @@ export type ThinkingLevelMap = Readonly<Record<ThinkingLevel, string | null>>;
 
 /**
  * Default thinking level map for Qwen models without a static fallback.
- * QwenCloud supports low/medium/high reasoning effort levels.
- * "off" maps to null (QwenCloud has no explicit "none" reasoning effort).
+ * QwenCloud supports low/medium/high reasoning effort levels and "none"
+ * to explicitly disable reasoning (verified against live API).
  */
 export const DEFAULT_THINKING_LEVEL_MAP: ThinkingLevelMap = {
-  off: null,
+  off: "none",
   minimal: null,
   low: "low",
   medium: "medium",
@@ -33,10 +33,10 @@ export const DEFAULT_THINKING_LEVEL_MAP: ThinkingLevelMap = {
 };
 
 /**
- * DeepSeek V4 Pro thinking level map — only supports "high".
+ * DeepSeek V4 Pro thinking level map — only supports "high" (and "none").
  */
 export const DEEPSEEK_V4_THINKING_MAP: ThinkingLevelMap = {
-  off: null,
+  off: "none",
   minimal: null,
   low: null,
   medium: null,
@@ -45,11 +45,10 @@ export const DEEPSEEK_V4_THINKING_MAP: ThinkingLevelMap = {
 };
 
 /**
- * GLM-5.2 thinking level map — supports low/medium/high/xhigh.
- * "off" maps to null for GLM (no "none" reasoning_effort).
+ * GLM-5.2 thinking level map — supports low/medium/high/xhigh + "none".
  */
 export const GLM_52_THINKING_MAP: ThinkingLevelMap = {
-  off: null,
+  off: "none",
   minimal: null,
   low: "low",
   medium: "medium",
