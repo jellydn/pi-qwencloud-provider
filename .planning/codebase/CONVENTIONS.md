@@ -2,135 +2,119 @@
 
 ## Code Style
 
-### Language
+### Naming
 
-- **TypeScript 7.x** strict mode — all `strict: true` flags enabled
-- **ESM only** — `"type": "module"`, `.js` extensions in imports
-- **No classes** — pure functions throughout
-- **No `any`** — `unknown` with type guards for external data
+| Convention | Example |
+|---|---|
+| PascalCase for types/interfaces | `ModelConfig`, `AuthKeyOptions`, `QwenCloudOpenAICompat` |
+| camelCase for functions/variables | `resolveApiKey`, `fetchRemoteModels`, `modelIds` |
+| SCREAMING_SNAKE for constants | `DEFAULT_API_BASE`, `PROVIDER_NAME`, `ENV_API_KEY` |
+| SCREAMING_SNAKE object keys for maps | `QWENCLOUD_OPENAI_COMPAT`, `QWENCLOUD_ERROR_MESSAGES` |
+| `I` prefix for interfaces (selective) | Only when needed for disambiguation |
 
-### Formatting
+### Module headers
 
-- **oxfmt** — zero-config formatter, enforced via pre-commit
-- No manual formatting rules — oxfmt handles everything
-
-### Linting
-
-- **oxlint** with plugins: `typescript`, `unicorn`, `oxc`, `import`, `jest`
-- `unicorn/consistent-function-scoping` disabled in test files
-
-## Import Conventions
-
-### External
+Every source file opens with a JSDoc block describing the module's purpose:
 
 ```typescript
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { OAuthCredentials, OAuthLoginCallbacks } from "@earendil-works/pi-ai";
+/**
+ * QwenCloud model definitions and dynamic model discovery.
+ *
+ * @module qwencloud-models
+ */
 ```
 
-Type-only imports use `import type`. Peer deps are dev-only.
-
-### Node.js Built-ins
+Comment sections use `───` rulers for visual grouping:
 
 ```typescript
-import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
+// ─── Model Definitions ─────────────────────────────────────────────────────
 ```
 
-Always use `node:` prefix.
+### TypeScript strictness
 
-### Internal (Relative)
+- `strict: true` in `tsconfig.json`
+- All return types explicit on exported functions
+- `readonly` annotations on constant arrays and tuples
+- `unknown` used for parsed JSON before type-narrowing via guards
+- `@module` JSDoc tags on every file
 
-```typescript
-import { resolveApiBase, PROVIDER_NAME, ENV_API_KEY } from "./env.js";
-import { isRecord, stringValue, numberValue, booleanValue } from "./utils.js";
-```
+### Immutability
 
-Always use `.js` extensions (ESM resolution). Sorted: external → node → internal.
+- `MODELS` is `readonly ModelConfig[]`
+- `ThinkingLevelMap` is `Readonly<Record<...>>`
+- `input` is `readonly ["text"] | readonly ["text", "image"]`
+- Spread operator used for transformations (e.g., `{ ...model, compat: { ...default, ...override } }`)
 
-## Naming
+### Imports
 
-| Kind | Convention | Example |
-|------|-----------|---------|
-| Constants | `UPPER_SNAKE_CASE` | `DEFAULT_API_BASE`, `PROVIDER_NAME` |
-| Functions | camelCase | `resolveApiKey`, `fetchRemoteModels` |
-| Types/Interfaces | PascalCase | `ModelConfig`, `AuthKeyOptions` |
-| Type aliases | PascalCase | `ThinkingLevel`, `ThinkingLevelMap` |
-| Files | kebab-case | `error-handler.ts`, `models.ts` |
-| Test files | `*.test.ts` | `auth.test.ts` |
+- `.js` extension on all internal imports (ESM bundler resolution)
+- Types imported with `import type` when used only as types
+- pi peer packages imported without version qualifiers (`@earendil-works/pi-ai`)
+
+## Error Handling
+
+### Provider errors (message_end pipeline)
+
+Three-stage pipeline in `error-handler.ts`:
+
+1. **Filter** — is this a QwenCloud error? (`stopReason === "error"` + provider match)
+2. **Classify** — delegate to `errors.ts` pure function (`classifyQwenCloudError`)
+3. **Deliver** — `ctx.ui.notify()` in TUI mode, `console.error` fallback otherwise
+
+Classification in `errors.ts` uses case-insensitive substring matching against known error patterns (401, 403, 429, quota). Falls through to `"unknown"` with a generic actionable message.
+
+### Wan API errors
+
+- API key missing → descriptive error pointing to `QWENCLOUD_API_KEY` or `/login`
+- Invalid model/size/n → validation before API call with supported values listed
+- HTTP errors → status code + truncated body (300 chars)
+- Malformed response → specific missing-field errors at each nesting level
+- Network errors → bubble up naturally (handled by try/catch in slash command)
+
+### Auth file errors
+
+- ENOENT / file not found → silently skipped
+- Corrupt JSON → caught, warns to console via `[qw]` prefix
+- Other filesystem errors → caught but suppressed
 
 ## Patterns
 
-### Dependency Injection for Testing
+### Dependency injection for testability
 
-All I/O is injectable via options objects:
+All I/O functions accept injectable alternatives:
 
 ```typescript
 export interface AuthKeyOptions {
   env?: Record<string, string | undefined>;
-  authPaths?: readonly string[];
   readFile?: (path: string) => string;
   fileExists?: (path: string) => boolean;
-  homeDir?: () => string;
-}
-
-export function resolveApiKey(
-  providedKey?: string,
-  options: AuthKeyOptions = {},
-): string | undefined {
-  const readFile = options.readFile ?? ((p: string) => readFileSync(p, "utf-8"));
   // ...
 }
 ```
 
-Tests inject mock functions; production uses defaults (Node.js built-ins + `process.env`).
+This is used consistently across `auth.ts`, `discovery.ts`, and `wan.ts`.
 
-### Generic File Walkers
+### Export one concern per function
 
-`walkAuthPaths<T>` in `auth.ts` is a reusable JSON-file-traversal utility with an extractor callback. The same pattern is used in ClinePass's `auth.ts` for both `resolveApiKey` and `resolveClineAuthCredentials`.
+- `resolveApiKey` — one function, one concern (key resolution chain)
+- `classifyQwenCloudError` — pure function, no side effects
+- `handleQwenCloudError` — side-effectful delivery wrapper
+- `generateWanImage` + `downloadWanImage` — split API call from file I/O
 
-### Fallback Chains
+### Barrel re-export for split modules
 
-```typescript
-// API key: explicit → env var → auth files
-if (providedKey) return providedKey;
-if (env[ENV_API_KEY]) return env[ENV_API_KEY];
-return walkAuthPaths(options, extract);
+`src/models.ts` is a pure barrel — no logic, just re-exports from `thinking.ts`, `catalog.ts`, and `discovery.ts`. This preserves backward compatibility while keeping the modules physically separate.
 
-// Models: remote fetch → static catalog
-if (apiKey) {
-  const remote = await fetchRemoteModels({ ...options, apiKey });
-  if (remote) return remote;
-}
-return MODELS;
-```
+### Pi integration interface
 
-### Error Filter → Classify → Deliver
+The default export in `index.ts` conforms to `ExtensionAPI`:
 
 ```typescript
-export function handleQwenCloudError(event, ctx) {
-  // 1. Filter: is it our provider + an error?
-  if (msg.provider !== PROVIDER_NAME) return;
-  if (msg.stopReason !== "error") return;
-
-  // 2. Classify
-  const { message } = classifyQwenCloudError(msg.errorMessage);
-
-  // 3. Deliver
-  ctx.hasUI ? ctx.ui.notify(message, "error") : console.error(message);
+export default async function (pi: ExtensionAPI) {
+  pi.registerProvider(...)
+  pi.on("message_end", ...)
+  pi.registerCommand(...)
 }
 ```
 
-## Documentation
-
-- Every module has a `@module` JSDoc tag
-- Every exported function has a JSDoc description
-- `src/index.ts` has a comprehensive module header with setup instructions
-- ADRs and implementation notes in `.planning/`
-
-## Git
-
-- Conventional commits (implied by changesets)
-- `main` branch only (no develop/staging)
-- `.npmignore` excludes dev-only dirs from published package
+Validated at compile time by `tests/type/contract.ts`.

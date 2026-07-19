@@ -1,80 +1,59 @@
 # Concerns — pi-qwencloud-provider
 
-## Resolved
+## Resolved (post-architecture refactor)
 
-### 1. `reasoning_effort` vs `enable_thinking` ✅ (verified)
+### ~~models.ts hot spot (445 lines, 5 jobs)~~
+**Fixed:** Split into `thinking.ts` (reasoning maps), `catalog.ts` (data), `discovery.ts` (I/O). Data edits now touch only catalog.ts (~210 lines). Compat-merge and map-selection rules stated once.
 
-**Severity:** ~~Medium~~ Resolved | **File:** `src/models.ts`
+### ~~walkAuthPaths hypothetical seam~~
+**Fixed:** Generic `<T>/extract` seam removed; walk logic inlined into `resolveApiKey`. Injectable handles preserved.
 
-Smoke-tested against live API (2026-07-19): QwenCloud's OpenAI-compatible endpoint at `token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1` **accepts `reasoning_effort`**, including `"none"`. Additionally, omitting the parameter does NOT disable reasoning — `"none"` is required. Therefore `off` maps to `"none"` in all thinking maps.
+### ~~env.ts junk drawer~~
+**Fixed:** `sanitizeApiKey` moved to `oauth.ts` (only caller). Dead `buildEndpointUrl` + `DEFAULT_ENDPOINT` deleted. env.ts is now config constants + `resolveApiBase` only.
 
-*Residual risk:* If QwenCloud aligns their OpenAI-compatible layer with native DashScope's `enable_thinking`, `reasoning_effort` could stop working. Monitor API behavior on updates.
+### ~~CONTROL_CHARS_RE readability (CodeRabbit nitpick)~~
+**Fixed:** Simplified from `new RegExp(String.fromCharCode(...), "g")` template-literal construction to a clean `/[\x00-\x1F\x7F]/g` regex literal. Same behaviour, better readability.
 
-### 2. Image/Video Models in Chat Catalog ✅ (mitigated)
+### ~~Self-dependency in package.json~~
+**Fixed:** Removed `"pi-qwencloud-provider": "^0.1.2"` from `dependencies` — a leftover scaffold artefact.
 
-**Severity:** ~~Low~~ Resolved | **File:** `src/models.ts`
+### ~~defaultAuthPaths untested~~
+**Fixed:** Added a unit test verifying `defaultAuthPaths("/home/test")` returns `["/home/test/.pi/agent/auth.json"]`.
 
-`fetchRemoteModels` now filters out non-chat families (`wan`, `happyhorse`, `qwen-image`) via `isNonChatModel()`, preventing dynamic registration. The static catalog intentionally retains them (user requested "all models") with `reasoning: false` and placeholder context/maxTokens values.
+### ~~Test file not split along module seam~~
+**Fixed:** `models.test.ts` (289 lines) split into `catalog.test.ts` (10 tests, imports catalog + thinking directly), `discovery.test.ts` (10 tests, imports discovery + catalog), and `models.test.ts` (4 barrel integration tests). 101 tests across 11 files.
 
-*Residual risk:* pi's model selector still shows these from the static catalog. Selecting one for chat will return an API error. Mitigation would require pi platform changes to filter by model capability.
+### ~~thinkingMapFor not wired into discovery (spec gap)~~
+**Fixed:** `parseRemoteModel` now calls `thinkingMapFor(reasoning, fallback?.thinkingLevelMap)` instead of the inline ternary. Import slimmed from two constants to one function.
 
-### 3. Pricing Estimates ✅ (corrected)
+### ~~Non-chat models missing from remote results~~
+**Fixed:** `resolveModels` appends static non-chat models (Wan, HappyHorse) to remote results so they're consistently available regardless of fetch success.
 
-**Severity:** ~~Low~~ Resolved | **File:** `src/models.ts`
+### ~~Section rulers missing in thinking.ts~~
+**Fixed:** Added three section rulers (Types, Translation Functions, Thinking Level Maps) matching the rest of the codebase.
 
-Pricing corrected based on research findings (findings.md):
-- `qwen3.6-flash`: 0.07/0.14 → 0.25/1.50 (official Token Plan ≤256K tier)
-- `glm-5.2`: 1.4/4.4 → 1.10/3.85, cacheRead 0.26 → 0.275
-- `deepseek-v4-pro`: flagged as unconfirmed estimate in comments
+## Remaining
 
-Note: Token Plan uses credit-based billing, not per-token. These values are for pi's usage display only.
+### 1. Wan endpoint URL construction is fragile
 
-### 5. No Dynamic Model Discovery Filter for Non-Chat ✅ (fixed)
+**Severity:** Low | **File:** `src/wan.ts`
 
-**Severity:** ~~Low~~ Resolved | **File:** `src/models.ts`
+The Wan endpoint URL is derived from the chat completions base by regex-replacing `/compatible-mode/v1` with the Wan path. If a user sets `QWENCLOUD_API_BASE` to a custom proxy URL that doesn't follow the same path convention, the generated Wan URL will be incorrect. A more robust approach would use a separate env var (`QWENCLOUD_WAN_BASE`) or parse the host deterministically.
 
-Added `NON_CHAT_FAMILIES` array and `isNonChatModel()` function with case-insensitive matching. `fetchRemoteModels` now excludes models whose IDs contain `wan`, `happyhorse`, or `qwen-image`.
+### 2. `reasoningEffortFor` is unused internally
 
-## Still Open
+**Severity:** Low (code slop) | **File:** `src/thinking.ts`
 
-### 4. 403 Error Classification is Broad
+The `reasoningEffortFor(map, level)` function is exported but never called within the provider. It exists as a public utility for external consumers. The `thinkingMapFor` function now handles map selection in discovery; `reasoningEffortFor` is the level-translation counterpart for external callers.
 
-**Severity:** Low | **File:** `src/errors.ts`
+### 3. HappyHorse video generation not implemented
 
-All 403 errors are classified as `auth_expired` ("plan expired"). A 403 from QwenCloud could also mean:
-- Model not available on your plan
-- Region restrictions
-- Access denied for a specific model
+**File:** `src/catalog.ts` (models in catalog, no generation module)
 
-*Risk:* Users get a misleading "plan expired" message when the real issue is model access. Consider adding more pattern matching to distinguish plan-expired 403s from other 403s.
+The HappyHorse models (`happyhorse-1.1-i2v/t2v/r2v`) are in the catalog for discovery but have no generation module equivalent to `wan.ts`. HappyHorse uses an async task pattern (submit → poll → download) which is more complex than Wan's synchronous endpoint.
 
-### 6. No Streaming E2E Test
+### 4. No vision test for qwen3.8-max-preview and qwen3.6-flash
 
-**Severity:** Low | **File:** `tests/e2e/smoke.sh`
+**Severity:** Low | **File:** `tests/e2e/smoke-pi.sh`
 
-The smoke test only tests non-streaming chat completions. pi uses SSE streaming (`api: "openai-completions"`). The streaming path hasn't been verified against QwenCloud's API.
-
-*Risk:* Streaming could have subtle differences (SSE format, chunk delimiters, finish reasons) that only surface in pi.
-
-### 7. Auth File Warning on Malformed JSON
-
-**Severity:** Trivial | **File:** `src/auth.ts`
-
-When `~/.pi/agent/auth.json` contains invalid JSON, `walkAuthPaths` logs a `console.warn`. This is visible in test output ("skips malformed auth.json" test). Expected behavior, but could be noisy in production if users have corrupted auth files.
-
-## Design Debt
-
-### Generic `walkAuthPaths` is Reusable but Coupled
-
-The `walkAuthPaths` function in `auth.ts` was adapted from ClinePass. While functional, it mixes file-system concern with JSON parsing and extraction logic. Future refactors could separate these.
-
-### No Error Classification Tests for `insufficient_quota`
-
-The `errors.test.ts` covers `insufficient_quota` classification, but no `error-handler.test.ts` test specifically covers quota errors being surfaced via `ctx.ui.notify`. All error types share the same code path, so this is low risk.
-
-## Security
-
-- **API key in env**: `QWENCLOUD_API_KEY` is standard. pi uses `$QWENCLOUD_API_KEY` sigil for runtime resolution.
-- **No key logging**: `sanitizeApiKey` strips paste wrappers. `resolveApiKey` never logs key contents.
-- **Auth file parsing**: JSON.parse with try/catch. Corrupt files produce warnings without exposing contents.
-- **No secrets in repo**: `.gitignore` excludes `node_modules`. No hardcoded keys.
+The vision E2E test only covers `qwen3.7-plus`. Both `qwen3.8-max-preview` and `qwen3.6-flash` also support visual understanding per official docs, but this hasn't been verified in the E2E pipeline.

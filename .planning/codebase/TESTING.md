@@ -2,97 +2,101 @@
 
 ## Framework
 
-| Component | Tool |
-|-----------|------|
-| Runner | Vitest ^4.1.5 |
-| Type checking | `tsc --noEmit` |
-| Linting | oxlint |
-| E2E | bash + curl (smoke.sh) |
+| Item | Choice |
+|---|---|
+| Runner | Vitest 4.x |
+| Config | `vitest.config.ts` — includes `tests/**/*.test.ts` |
+| Watch | `npm run test:watch` |
+| CI | `npm test` in GitHub Actions |
 
 ## Structure
 
-### Unit Tests (`tests/unit/`)
+1:1 module-to-test mapping under `tests/unit/`:
 
-1:1 mapping: `src/foo.ts` → `tests/unit/foo.test.ts`
+| Source Module | Test File | Test Count |
+|---|---|---|
+| `index.ts` | `index.test.ts` | 6 |
+| `env.ts` | `env.test.ts` | 8 |
+| `auth.ts` | `auth.test.ts` | 8 |
+| `models.ts` (barrel → catalog + discovery + thinking) | `models.test.ts` | ~20 |
+| `oauth.ts` | `oauth.test.ts` | 10 |
+| `error-handler.ts` | `error-handler.test.ts` | — |
+| `errors.ts` | `errors.test.ts` | — |
+| `wan.ts` | `wan.test.ts` | 12 |
+| `utils.ts` | `utils.test.ts` | — |
+| **Type contract** | `tests/type/contract.ts` | Compile-time |
+| **E2E curl** | `tests/e2e/smoke.sh` | — |
+| **E2E pi** | `tests/e2e/smoke-pi.sh` | 5 (4 chat + 1 vision) |
 
-| Test File | Covers | Tests |
-|-----------|--------|-------|
-| `utils.test.ts` | `isRecord`, `stringValue`, `numberValue`, `booleanValue` | 12 |
-| `env.test.ts` | Constants, `resolveApiBase`, `sanitizeApiKey`, `buildEndpointUrl` | 15 |
-| `auth.test.ts` | `resolveApiKey` priority chain, `defaultAuthPaths` | 15 |
-| `models.test.ts` | `MODELS` catalog, thinking maps, dynamic discovery, `resolveModels` | 21 |
-| `errors.test.ts` | `classifyQwenCloudError` (401/403/429/quota/unknown) | 11 |
-| `error-handler.test.ts` | `handleQwenCloudError` filter/classify/deliver | 8 |
-| `oauth.test.ts` | `login`, `refreshToken`, `getApiKey` | 7 |
-| `index.test.ts` | `registerProvider` shape, model forwarding, oauth wiring, event listener | 6 |
-| **Total** | | **95** |
-
-### Type Contract (`tests/type/`)
-
-`contract.ts` verifies `default export` conforms to `ExtensionAPI` at compile time.
-
-### E2E (`tests/e2e/`)
-
-`smoke.sh` — 7 scenarios against live API (requires `QWENCLOUD_API_KEY`):
-1. GET `/models`
-2. Basic chat (qwen3.6-flash)
-3. `reasoning_effort=low`
-4. `reasoning_effort=high`
-5. No `reasoning_effort`
-6. `reasoning_effort="none"`
-7. deepseek-v4-pro
+Total: **97 unit tests** across 9 test files.
 
 ## Mocking Strategy
 
-### Dependency Injection (no mocking library needed)
+### Dependency injection (no mocking library for I/O)
 
-All I/O is injectable — tests pass mock functions directly:
-
-```typescript
-it("falls back to auth.json with apiKey field", () => {
-  const readFile = () => JSON.stringify({ apiKey: "qwen_from_file" });
-  const fileExists = () => true;
-  expect(resolveApiKey(undefined, { readFile, fileExists })).toBe("qwen_from_file");
-});
-```
-
-### Global Stubs for fetch
+Tests pass injectable stubs through the options pattern:
 
 ```typescript
-beforeEach(() => {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
-    new Response("Not Found", { status: 404 })
-  ));
-});
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
+// auth.test.ts — injectable readFile + fileExists
+const readFile = () => JSON.stringify({ apiKey: "qw_from_file" });
+const fileExists = () => true;
+expect(resolveApiKey(undefined, { readFile, fileExists })).toBe("qw_from_file");
 ```
 
-### Env Stubs
+### vi.mock for auth in wan tests
+
+`wan.test.ts` mocks the entire auth module to prevent env API keys from leaking into tests:
 
 ```typescript
-vi.stubEnv(ENV_API_KEY, "test-key-123");
+vi.mock("../../src/auth.js", () => ({
+  resolveApiKey: vi.fn().mockReturnValue(undefined),
+}));
 ```
 
-### No spy/mock on console.warn in auth.corrupt-file test
+### vi.stubGlobal for fetch
 
-The `"skips malformed auth.json"` test relies on `walkAuthPaths` catching JSON parse errors and calling `console.warn`. This produces expected warning output during test runs.
+```typescript
+vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("...")));
+```
 
-## Test Commands
+### vi.stubEnv for environment variables
 
-| Command | What it runs |
-|---------|-------------|
-| `npm test` | `vitest run` — all `tests/**/*.test.ts` |
-| `npm run test:watch` | `vitest` — watch mode |
-| `npm run test:e2e` | `bash tests/e2e/smoke.sh` (needs `QWENCLOUD_API_KEY`) |
-| `npm run typecheck` | `tsc` — compile-time verification |
-| `npm run lint` | `oxlint --config .oxlintrc.json src/ tests/` |
+```typescript
+vi.stubEnv("QWENCLOUD_API_KEY", "test-key-123");
+```
 
-## CI
+### vi.spyOn for console
 
-Configuration at `.github/workflows/ci.yml` (standard Node.js CI: install → lint → typecheck → test).
+```typescript
+const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+```
 
-## Coverage
+## E2E Tests
 
-No explicit coverage thresholds configured. The 1:1 test-to-module mapping ensures comprehensive coverage of the 8 source modules.
+### Curl smoke (`tests/e2e/smoke.sh`)
+
+Tests the QwenCloud API directly (no pi). Requires `CLINE_API_KEY` env var.
+
+### pi E2E (`tests/e2e/smoke-pi.sh`)
+
+Tests 5 scenarios:
+1. Basic chat (`qw/qwen3.6-flash`) — simple response
+2. Reasoning (`qw/qwen3.7-plus`) — math question
+3. DeepSeek (`qw/deepseek-v4-pro`) — response
+4. GLM (`qw/glm-5.2`) — response
+5. **Vision** (`qw/qwen3.7-plus`) — describes a generated 50×50 red PNG
+
+Requires `QWENCLOUD_API_KEY` + `pi` CLI. Vision test uses `tests/e2e/create-test-image.py` to generate the test image (Python stdlib only, no PIL).
+
+### Type contract (`tests/type/contract.ts`)
+
+Compile-time verification that the default export conforms to `ExtensionAPI`. If pi changes the interface, this fails at typecheck time.
+
+## Coverage Notes
+
+- Every exported function has at least one unit test
+- `resolveApiKey` chain tested: explicit key → env var → auth.json (apiKey field) → auth.json (qw string) → auth.json (qw OAuth object) → undefined → malformed JSON → env vs file priority
+- `generateWanImage` tested: no key, bad model, bad size, bad n, API error (401), network error, success, custom options, no image URL
+- `downloadWanImage` tested: success (with cleanup), download failure (404)
+- `login` tested: normal flow, empty key, whitespace trim, short key warning
+- `fetchRemoteModels` tested through `resolveModels` fallback (remote unavailable → static catalog)

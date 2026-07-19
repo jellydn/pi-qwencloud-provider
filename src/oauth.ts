@@ -6,15 +6,33 @@
  * 2. Prompts the user to paste their API key
  * 3. Returns credentials (the API key serves as both access and refresh token)
  *
- * Unlike ClinePass, there is no WorkOS OAuth, no token refresh, and no
- * credential extraction from Cline CLI config files.
+ * @module qwencloud-oauth
  */
 
 import type { OAuthCredentials, OAuthLoginCallbacks } from "@earendil-works/pi-ai";
-import { sanitizeApiKey } from "./env.js";
 
 const DASHBOARD_URL = "https://home.qwencloud.com";
 const TEN_YEARS_MS = 10 * 365 * 24 * 60 * 60 * 1000; // API keys don't expire
+
+// ─── API key sanitisation ──────────────────────────────────────────────────
+
+/** Regex matching control characters (0x00-0x1F) and DEL (0x7F). */
+// oxlint-disable-next-line no-control-regex -- intentionally matches control chars
+const CONTROL_CHARS_RE = /[\x00-\x1F\x7F]/g;
+
+/**
+ * Remove terminal paste wrappers and control chars from API key input.
+ */
+export function sanitizeApiKey(input: string): string {
+  const esc = "\x1b";
+  return input
+    .replaceAll(`${esc}[200~`, "")
+    .replaceAll(`${esc}[201~`, "")
+    .replaceAll("[200~", "")
+    .replaceAll("[201~", "")
+    .replace(CONTROL_CHARS_RE, "")
+    .trim();
+}
 
 // ─── Static API key helpers ────────────────────────────────────────────────
 

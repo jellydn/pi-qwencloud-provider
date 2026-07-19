@@ -4,86 +4,83 @@
 
 ```
 pi-qwencloud-provider/
-├── src/
-│   ├── index.ts           # Entry point — pi extension registration
-│   ├── env.ts             # Constants, API base, key sanitization
-│   ├── auth.ts            # API key resolution chain
-│   ├── models.ts          # Static catalog + dynamic discovery
-│   ├── oauth.ts           # Login flow (API key paste)
-│   ├── errors.ts          # Error classification
-│   ├── error-handler.ts   # message_end event handler
-│   └── utils.ts           # Type guards (isRecord, stringValue, etc.)
+├── src/                        # Source modules (pi loads .ts directly)
+│   ├── index.ts                # Entry point — pi.registerProvider("qw", ...) + /wan command
+│   ├── env.ts                  # Constants (DEFAULT_API_BASE, ENV_API_KEY, PROVIDER_NAME) + resolveApiBase
+│   ├── auth.ts                 # API key resolution (env → ~/.pi/agent/auth.json)
+│   ├── models.ts               # Barrel re-export (thinking + catalog + discovery)
+│   ├── thinking.ts             # Reasoning-effort maps + reasoningEffortFor() interface
+│   ├── catalog.ts              # Static model data (11 models) + compat flags + filtering
+│   ├── discovery.ts            # Dynamic model fetch (/models endpoint, 5s timeout)
+│   ├── oauth.ts                # /login flow + sanitizeApiKey + static credential helpers
+│   ├── error-handler.ts        # message_end event handler (filter → classify → deliver)
+│   ├── errors.ts               # Error classification logic (pure functions)
+│   ├── wan.ts                  # Wan image generation (API call + download + save)
+│   └── utils.ts                # Type guards (isRecord, stringValue, numberValue, booleanValue)
+│
 ├── tests/
-│   ├── unit/
-│   │   ├── index.test.ts         # Provider registration + event wiring
-│   │   ├── env.test.ts           # Constants, resolveApiBase, sanitizeApiKey
-│   │   ├── auth.test.ts          # API key resolution
-│   │   ├── models.test.ts        # Model catalog + dynamic discovery
-│   │   ├── oauth.test.ts         # Login, refreshToken, getApiKey
-│   │   ├── errors.test.ts        # Error classification
-│   │   ├── error-handler.test.ts # Event handling
-│   │   └── utils.test.ts         # Type guard tests
+│   ├── unit/                   # 1:1 module mapping
+│   │   ├── index.test.ts       # Provider registration + message_end event
+│   │   ├── env.test.ts         # Constants + resolveApiBase
+│   │   ├── auth.test.ts        # resolveApiKey (8 tests)
+│   │   ├── models.test.ts      # Static catalog + fetchRemoteModels + resolveModels
+│   │   ├── oauth.test.ts       # Login flow + refreshToken + getApiKey + sanitizeApiKey
+│   │   ├── error-handler.test.ts
+│   │   ├── errors.test.ts      # classifyQwenCloudError
+│   │   ├── wan.test.ts         # generateWanImage + downloadWanImage (12 tests)
+│   │   └── utils.test.ts       # Type guard validation
 │   ├── type/
-│   │   └── contract.ts           # Compile-time ExtensionAPI contract
+│   │   └── contract.ts         # Compile-time check: default export conforms to ExtensionAPI
 │   └── e2e/
-│       └── smoke.sh             # Live API smoke test (7 scenarios)
+│       ├── smoke.sh            # Curl-based smoke (QwenCloud API directly)
+│       ├── smoke-pi.sh         # pi-based E2E (4 chat models + 1 vision test)
+│       └── create-test-image.py # Helper: generates 50×50 red PNG for vision test
+│
 ├── .planning/
-│   ├── codebase/                 # Codebase map (this file set)
-│   └── implement-notes.md        # Architecture decisions + smoke test results
-├── package.json                  # pi extension metadata + scripts
-├── tsconfig.json                 # TypeScript strict, ES2022, noEmit
-├── vitest.config.ts              # Test include pattern
-├── .oxlintrc.json                # Lint rules
-├── .oxfmtrc.json                 # Formatter config
-├── .gitignore
-├── .npmignore
-└── README.md                     # Setup instructions + model table
+│   └── codebase/               # This codemap (7 docs)
+│
+├── .github/workflows/ci.yml    # CI: typecheck + test + lint
+├── package.json                # pi extension metadata + npm scripts
+├── tsconfig.json               # strict, noEmit, bundler resolution
+├── vitest.config.ts            # Test includes
+├── .oxlintrc.json              # Lint config (disables function-scoping in tests)
+├── .oxfmtrc.json               # Format config
+├── prek.toml                   # Pre-commit hooks
+├── renovate.json               # Dep update automation
+├── CHANGELOG.md                # Release history (v0.1.0 → v0.1.3)
+├── README.md                   # User-facing docs
+└── AGENTS.md                   # Agent guide for AI coding tools
 ```
-
-## File Line Counts
-
-| File | Lines | Purpose |
-|------|-------|---------|
-| `src/models.ts` | 414 | Largest file — 11 model defs + fetch/parse logic |
-| `tests/unit/models.test.ts` | 267 | Model tests + fetch tests |
-| `tests/unit/index.test.ts` | 152 | Provider registration tests |
-| `src/index.ts` | 76 | Entry point — minimal wiring |
-| `tests/unit/oauth.test.ts` | 153 | Login flow tests |
-| `src/auth.ts` | 99 | Key resolution + file walking |
-| `tests/unit/auth.test.ts` | 140 | Auth resolution tests |
-| `src/errors.ts` | 95 | Error classification + messages |
-| `tests/unit/errors.test.ts` | 82 | Classification tests |
-| `src/env.ts` | 78 | Constants + URL builders |
-| `tests/unit/error-handler.test.ts` | 131 | Event handler tests |
-| `src/error-handler.ts` | 57 | message_end handler |
-| `src/oauth.ts` | 87 | Login flow |
-| `src/utils.ts` | 32 | Type guards |
-| `tests/unit/env.test.ts` | 88 | Env tests |
-| `tests/unit/utils.test.ts` | 64 | Utility tests |
-| `tests/type/contract.ts` | 15 | Type contract |
-| **Total** | **1,834** | |
-
-## Naming Conventions
-
-| Convention | Example |
-|-----------|---------|
-| **Modules** | `@module qwencloud-auth` JSDoc tag on every module |
-| **Providers** | `PROVIDER_NAME = "qwencloud"` |
-| **Env vars** | `QWENCLOUD_API_KEY`, `QWENCLOUD_API_BASE` |
-| **Model IDs** | `qwencloud/qwen3.7-plus` (prefix/slug format) |
-| **Exports** | camelCase functions, UPPER_CASE constants |
-| **Tests** | 1:1 mapping `src/foo.ts` → `tests/unit/foo.test.ts` |
-| **Test describes** | Match export name: `describe("resolveApiKey", ...)` |
 
 ## Key Locations
 
 | What | Where |
-|------|-------|
-| Provider registration | `src/index.ts` — `pi.registerProvider("qwencloud", ...)` |
-| API base override | `src/env.ts` — `resolveApiBase(env)` reads `QWENCLOUD_API_BASE` |
-| Model definitions | `src/models.ts` — `MODELS` array (11 models) |
-| Thinking level mappings | `src/models.ts` — `DEFAULT_THINKING_LEVEL_MAP`, `DEEPSEEK_V4_THINKING_MAP`, `GLM_52_THINKING_MAP` |
-| Auth file paths | `src/auth.ts` — `defaultAuthPaths(home)` |
-| Login dashboard URL | `src/oauth.ts` — `DASHBOARD_URL = "https://home.qwencloud.com"` |
-| Error messages | `src/errors.ts` — `QWENCLOUD_ERROR_MESSAGES` |
-| Model discovery endpoint | `src/models.ts` — `MODELS_ENDPOINT = "/models"` |
+|---|---|
+| Extension entry point | `src/index.ts` — default export receiving `ExtensionAPI` |
+| Provider name | `src/env.ts` — `PROVIDER_NAME = "qw"` |
+| Model catalog | `src/catalog.ts` — `MODELS` array (11 models) |
+| Reasoning maps | `src/thinking.ts` — 4 maps + `reasoningEffortFor()` |
+| Dynamic discovery | `src/discovery.ts` — `fetchRemoteModels()` + `resolveModels()` |
+| API key resolution | `src/auth.ts` — `resolveApiKey()` |
+| Login flow | `src/oauth.ts` — `login()`, `refreshToken()`, `getApiKey()` |
+| Error classification | `src/errors.ts` — `classifyQwenCloudError()` |
+| Error delivery | `src/error-handler.ts` — `handleQwenCloudError()` |
+| Wan image generation | `src/wan.ts` — `generateAndDownloadWanImage()` |
+| Type contract | `tests/type/contract.ts` — compile-time `ExtensionAPI` compliance |
+
+## Module Size
+
+| Module | Lines | Concern |
+|---|---|---|
+| `catalog.ts` | ~210 | Static data (largest data file) |
+| `discovery.ts` | ~130 | Fetch + parse |
+| `wan.ts` | ~150 | Image generation |
+| `auth.ts` | ~80 | Key resolution |
+| `oauth.ts` | ~95 | Login flow |
+| `thinking.ts` | ~65 | Reasoning maps |
+| `index.ts` | ~130 | Entry + Wan command |
+| `env.ts` | ~25 | Config |
+| `error-handler.ts` | ~35 | Event handler |
+| `errors.ts` | ~55 | Classification |
+| `utils.ts` | ~20 | Type guards |
+| `models.ts` | ~30 | Barrel |

@@ -1,90 +1,55 @@
 # Integrations — pi-qwencloud-provider
 
-## QwenCloud API
+## External APIs
 
-### Endpoint
+### QwenCloud Token Plan API
 
-```
-https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1
-```
+| Item | Value |
+|---|---|
+| Base URL | `https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1` |
+| Override env var | `QWENCLOUD_API_BASE` |
+| Auth | `Authorization: Bearer <apiKey>` header |
+| Key env var | `QWENCLOUD_API_KEY` |
 
-Overridable via `QWENCLOUD_API_BASE` env var.
+**Endpoints used:**
 
-### API Protocol
+| Endpoint | Module | Method | Purpose |
+|---|---|---|---|
+| `/chat/completions` | pi's `openai-completions` | POST (SSE) | Text/vision chat, reasoning, tool calls |
+| `/models` | `discovery.ts` | GET | Dynamic model list (5s timeout) |
+| `/api/v1/services/aigc/multimodal-generation/generation` | `wan.ts` | POST | Wan image generation (synchronous) |
 
-**OpenAI-compatible Chat Completions** (`api: "openai-completions"` in pi). pi's built-in streaming handler manages SSE, tool calls, and usage tracking.
+### Wan Image Generation (separate API)
 
-Key endpoints:
-- `POST /chat/completions` — chat completions with `reasoning_effort` support
-- `GET /models` — model discovery (OpenAI-compatible format)
+- Not chat/completions — synchronous REST endpoint derived from the same host
+- Models: `wan2.7-image` (up to 2K), `wan2.7-image-pro` (up to 4K)
+- Generated image URLs are OSS presigned URLs — expire in ~24h
+- Images downloaded immediately and saved to local disk
+- Accessed via pi slash command `/wan`, not through provider streaming
 
-### Authentication
+## Authentication
 
-**Bearer token** (`Authorization: Bearer <key>`). Static API keys — no OAuth, no token refresh, no session management.
+Static API keys only — no OAuth, no WorkOS, no token refresh.
 
-Key resolution order (`src/auth.ts` → `resolveApiKey`):
+**Resolution order** (`auth.ts`):
 1. Explicit key argument
-2. `QWENCLOUD_API_KEY` env var
-3. `~/.pi/agent/auth.json` → `{ "qwencloud": "<key>" }` or `{ "apiKey": "<key>" }`
+2. `QWENCLOUD_API_KEY` environment variable
+3. `~/.pi/agent/auth.json` — `{ "apiKey": "..." }` or `{ "qw": "..." }` or `{ "qw": { "access": "..." } }`
 
-### Supported Models
+**Login flow** (`oauth.ts`):
+1. Opens `home.qwencloud.com` in browser
+2. Prompts user to paste API key (sanitized for terminal paste wrappers)
+3. Stores as static credential (10-year expiry, never refreshes)
 
-| Model | Type | Reasoning |
-|-------|------|-----------|
-| `qwen3.8-max-preview` | Text | ✅ low/medium/high |
-| `qwen3.7-plus` | Text | ✅ low/medium/high |
-| `qwen3.7-max` | Text | ✅ low/medium/high |
-| `qwen3.6-flash` | Text | ✅ low/medium/high |
-| `deepseek-v4-pro` | Text | ✅ high only |
-| `glm-5.2` | Text | ✅ low/medium/high/xhigh |
-| `wan2.7-image` | Image gen | ❌ |
-| `wan2.7-image-pro` | Image gen | ❌ |
-| `happyhorse-1.1-i2v` | Video gen | ❌ |
-| `happyhorse-1.1-t2v` | Video gen | ❌ |
-| `happyhorse-1.1-r2v` | Video gen | ❌ |
+## pi Integration Points
 
-Note: Image/video models use separate API endpoints, not chat/completions. Included in catalog for discovery.
+| Integration | Module | Mechanism |
+|---|---|---|
+| Provider registration | `index.ts` | `pi.registerProvider("qw", { api: "openai-completions", ... })` |
+| OAuth/login | `oauth.ts` | `login()`, `refreshToken()`, `getApiKey()` |
+| Error surface | `error-handler.ts` | `pi.on("message_end", handleQwenCloudError)` — filter → classify → deliver |
+| Wan slash command | `index.ts` | `pi.registerCommand("wan", { handler })` |
 
-### Reasoning (`reasoning_effort`)
+## No External Dependencies
 
-Verified against live API (2026-07-19):
-- `"none"` — accepted, explicitly disables reasoning
-- `"low"`, `"medium"`, `"high"` — accepted
-- Omitting parameter — does **not** disable reasoning (qwen3.7-plus still reasons)
-
-### Rate Limits
-
-Token Plan credit-based (per `home.qwencloud.com`):
-- Lite: 700 Credits / 5h, 2,500 / 7d
-- Standard: 3,000 / 5h, 10,000 / 7d
-- Pro: 12,000 / 5h, 40,000 / 7d
-
-### Error Codes
-
-| Code | Classification | User Message |
-|------|---------------|--------------|
-| 401 | `auth_invalid` | Invalid API key |
-| 403 | `auth_expired` | Plan expired |
-| 429 | `rate_limited` | Rate limit / credit exhaustion |
-| Quota | `insufficient_quota` | Usage exceeded |
-
-## pi Platform
-
-### Extension API
-
-Entry: `src/index.ts` → default export `(api: ExtensionAPI) => Promise<void>`
-
-Registers via:
-- `pi.registerProvider("qwencloud", { ... })` — provider config
-- `pi.on("message_end", handler)` — error surface
-
-### OAuth Flow
-
-Simple browser-assisted paste (no OAuth protocol):
-1. Opens `https://home.qwencloud.com`
-2. Prompts user to paste API key
-3. Returns static credentials (10-year expiry, never refreshed)
-
-### Model Registration
-
-Models exposed as `qwencloud/<slug>` (e.g. `qwencloud/qwen3.7-plus`). pi invokes via `--model qwencloud/qwen3.7-plus`.
+The provider uses only Node.js standard library modules (`node:fs`, `node:os`, `node:path`, `node:fs/promises`). No npm runtime dependencies beyond the pi peer packages.

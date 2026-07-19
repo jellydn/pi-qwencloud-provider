@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import type { OAuthCredentials, OAuthLoginCallbacks } from "@earendil-works/pi-ai";
-import { login, refreshToken, getApiKey } from "../../src/oauth.js";
+import { login, refreshToken, getApiKey, sanitizeApiKey } from "../../src/oauth.js";
 
 function makeCallbacks(overrides?: {
   onAuth?: (params: { url: string }) => void;
@@ -73,6 +73,33 @@ describe("refreshToken", () => {
     expect(result.access).toBe("qwen_static_key_123");
     expect(result.refresh).toBe("qwen_static_key_123");
     expect(result.expires).toBeGreaterThan(Date.now());
+  });
+});
+
+describe("sanitizeApiKey", () => {
+  it("trims whitespace", () => {
+    expect(sanitizeApiKey("  test_key  ")).toBe("test_key");
+  });
+
+  it("removes terminal paste wrappers", () => {
+    const esc = String.fromCharCode(27);
+    expect(sanitizeApiKey(`${esc}[200~test_key${esc}[201~`)).toBe("test_key");
+  });
+
+  it("removes control characters", () => {
+    expect(sanitizeApiKey("test_\x00key")).toBe("test_key");
+  });
+
+  it("removes DEL character", () => {
+    expect(sanitizeApiKey("test_\x7Fkey")).toBe("test_key");
+  });
+
+  it("handles bracket-only paste wrappers (no escape)", () => {
+    expect(sanitizeApiKey("[200~test_key[201~")).toBe("test_key");
+  });
+
+  it("returns empty string for whitespace-only input", () => {
+    expect(sanitizeApiKey("   \t\n  ")).toBe("");
   });
 });
 
