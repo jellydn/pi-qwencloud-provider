@@ -54,7 +54,7 @@ pnpm add pi-qwencloud-provider
 | Qwen3.8 Max Preview | `qw/qwen3.8-max-preview` | 262K    | low / medium / high         |
 | Qwen3.7 Max         | `qw/qwen3.7-max`         | 262K    | low / medium / high         |
 | Qwen3.7 Plus        | `qw/qwen3.7-plus`        | 1M      | low / medium / high         |
-| Qwen3.6 Flash       | `qw/qwen3.6-flash`       | 131K    | off (no reasoning)          |
+| Qwen3.6 Flash       | `qw/qwen3.6-flash`       | 131K    | low / medium / high         |
 | DeepSeek V4 Pro     | `qw/deepseek-v4-pro`     | 1M      | high (xhigh → max)          |
 | GLM-5.2             | `qw/glm-5.2`             | 200K    | low / medium / high / xhigh |
 

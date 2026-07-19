@@ -132,7 +132,7 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
     id: "qwen3.8-max-preview",
     name: "Qwen3.8 Max Preview (QwenCloud)",
     reasoning: true,
-    input: ["text"],
+    input: ["text", "image"],
     // Cost estimate — Token Plan reference pricing for usage tracking only.
     cost: { input: 2.5, output: 7.5, cacheRead: 0.5, cacheWrite: 3.125 },
     contextWindow: 262_144,
@@ -143,7 +143,7 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
     id: "qwen3.7-plus",
     name: "Qwen3.7 Plus (QwenCloud)",
     reasoning: true,
-    input: ["text"],
+    input: ["text", "image"],
     // Estimated ≤256K tier pricing.
     cost: { input: 0.4, output: 1.6, cacheRead: 0.04, cacheWrite: 0.5 },
     contextWindow: 1_048_576,
@@ -164,7 +164,7 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
     id: "qwen3.6-flash",
     name: "Qwen3.6 Flash (QwenCloud)",
     reasoning: true,
-    input: ["text"],
+    input: ["text", "image"],
     // Official Token Plan pricing (≤256K tier): 0.25 / 1.50.
     cost: { input: 0.25, output: 1.5, cacheRead: 0.025, cacheWrite: 0.25 },
     contextWindow: 131_072,

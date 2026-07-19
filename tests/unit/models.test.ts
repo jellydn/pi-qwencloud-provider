@@ -37,7 +37,12 @@ describe("MODELS", () => {
       expect(m.cost.output).toBeGreaterThanOrEqual(0);
       expect(m.contextWindow).toBeGreaterThan(0);
       expect(m.maxTokens).toBeGreaterThan(0);
-      expect(m.input).toEqual(["text"]);
+      // Some models support visual understanding (text + image),
+      // others are text-only.
+      expect(
+        m.input[0] === "text" &&
+          (m.input.length === 1 || (m.input.length === 2 && m.input[1] === "image")),
+      ).toBe(true);
     }
   });
 
