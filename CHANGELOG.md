@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.2
+
+Critical bug fixes found during real-world pi testing.
+
+### Fixed
+
+- **Provider name renamed from `qwencloud` to `qw`** — avoids model name clashes with the clinepass provider (both have `deepseek-v4-pro` and `glm-5.2`). pi's model resolution checks all providers; the short unique name disambiguates. Users reference models as `qw/qwen3.7-plus`, `qw/deepseek-v4-pro`, etc.
+- **Model IDs are now bare API names** — dropped the `qwencloud/` prefix from internal model IDs (e.g., `qwencloud/deepseek-v4-pro` → `deepseek-v4-pro`). pi scopes via the provider name; the API gets the correct bare model name.
+- **`supportsDeveloperRole: false`** — QwenCloud rejects the `developer` role (400 error). pi now sends `system` instead, matching the ClinePass pattern.
+
 ## 0.1.1
 
 Bug fixes based on research findings and API smoke testing.
