@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-07-20)
 
 Architecture deepening refactor — 4 structural improvements from architecture review, plus PR review fixes.
 
