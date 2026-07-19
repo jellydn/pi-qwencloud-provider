@@ -45,7 +45,7 @@ pnpm add pi-qwencloud-provider
 - **API key auto-discovery** from the `QWENCLOUD_API_KEY` env var or `~/.pi/agent/auth.json`
 - **Dynamic model discovery** — fetches the live model list from the QwenCloud `/models` endpoint at startup (5s timeout), falling back to a curated static list on error
 - **`/login` integration** — opens the QwenCloud dashboard and prompts for a paste; keys are sanitized (terminal paste wrappers and control chars stripped)
-- **Modular architecture** — 12 focused source modules (`env`, `auth`, `thinking`, `catalog`, `discovery`, `models`, `oauth`, `error-handler`, `errors`, `utils`, `wan`) + entry point (`index`), all covered by per-module unit tests
+- **Modular architecture** — 13 focused source modules (`env`, `auth`, `thinking`, `catalog`, `discovery`, `models`, `oauth`, `error-handler`, `errors`, `utils`, `wan`, `happyhorse`) + entry point (`index`), all covered by per-module unit tests
 
 ## Supported Models
 
@@ -60,7 +60,7 @@ pnpm add pi-qwencloud-provider
 
 > **Thinking levels**: pi supports 6 levels — `off`, `minimal`, `low`, `medium`, `high`, `xhigh`. Each model declares which levels it supports, mapped to the provider's `reasoning_effort` parameter. Set the thinking level with pi's `--thinking` flag or `/thinking` command. A level marked as unsupported maps to `null` — no `reasoning_effort` is sent to the API, so the model runs with its default reasoning behavior.
 >
-> **Catalog-only models**: Wan (image) and HappyHorse (video) are listed in the catalog for discovery but use separate async task APIs, not chat/completions. They are not wired to pi's chat path.
+> **Image & video generation**: Wan (image) and HappyHorse (video) are available via slash commands — `/wan` for image generation and `/happyhorse` for video generation. They use separate API endpoints (not chat/completions) and are not available for chat.
 
 ## Authentication
 
@@ -90,6 +90,12 @@ pi --model qw/deepseek-v4-pro
 
 # List available models
 pi --list-models qw
+
+# Generate an image with Wan
+pi --model qw/qwen3.7-plus -p "/wan a cyberpunk cat on a rainy street"
+
+# Generate a video with HappyHorse
+pi --model qw/qwen3.7-plus -p "/happyhorse a sunset over the ocean"
 
 # Use in another project
 cd my-project
