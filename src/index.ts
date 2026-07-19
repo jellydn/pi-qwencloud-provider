@@ -47,14 +47,14 @@ export default async function (pi: ExtensionAPI) {
   pi.registerProvider(PROVIDER_NAME, {
     name: "QwenCloud",
     baseUrl: apiBase,
-    // Pass the literal API key value so pi doesn't hand the $ sigil to
-    // credential resolvers (clinepass) which hang trying to resolve it.
-    // Priority: env var > auth.json key > OAuth fallback.
-    ...(envApiKey ? { apiKey: envApiKey } : apiKey ? { apiKey } : {}),
+    // Match the clinepass pattern: only pass apiKey when the env var
+    // is set. When absent, pi falls back to the OAuth flow which reads
+    // from ~/.pi/agent/auth.json natively.
+    ...(envApiKey ? { apiKey: envApiKey } : {}),
     authHeader: true,
     // QwenCloud uses the standard OpenAI Chat Completions format, so pi's
     // built-in OpenAI streaming handles SSE + tool calls + usage.
-    api: "openai",
+    api: "openai-completions",
     oauth: {
       name: "QwenCloud",
       login,

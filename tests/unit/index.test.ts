@@ -30,11 +30,8 @@ describe("provider registration", () => {
     expect(captured).toBeDefined();
     expect(captured!.name).toBe(PROVIDER_NAME);
     expect(captured!.config.baseUrl).toBe(DEFAULT_API_BASE);
-    // When QWENCLOUD_API_KEY env var is absent, resolveApiKey() falls back
-    // to ~/.pi/agent/auth.json. The test environment has a key there so
-    // apiKey should be resolved and passed to registerProvider.
-    expect(typeof captured!.config.apiKey).toBe("string");
-    expect(captured!.config.api).toBe("openai");
+    expect(captured!.config.apiKey).toBeUndefined();
+    expect(captured!.config.api).toBe("openai-completions");
     expect(captured!.config.authHeader).toBe(true);
   });
 
