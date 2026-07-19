@@ -1,6 +1,6 @@
 {
   "name": "pi-qwencloud-provider",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "QwenCloud provider for pi — access Qwen3.8, DeepSeek V4, GLM-5.2, Wan image generation, and HappyHorse video generation through QwenCloud's OpenAI-compatible API",
   "keywords": [
     "ai",
