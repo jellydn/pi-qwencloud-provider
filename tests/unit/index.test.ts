@@ -21,6 +21,7 @@ describe("provider registration", () => {
         captured = { name, config };
       },
       on(_event: string, _handler: unknown) {},
+      registerCommand(_name: string, _options: Record<string, unknown>) {},
     };
 
     const mod = await import("../../src/index.js");
@@ -42,6 +43,7 @@ describe("provider registration", () => {
         captured = { name, config };
       },
       on(_event: string, _handler: unknown) {},
+      registerCommand(_name: string, _options: Record<string, unknown>) {},
     };
 
     const mod = await import("../../src/index.js");
@@ -59,6 +61,7 @@ describe("provider registration", () => {
         captured = { config };
       },
       on(_event: string, _handler: unknown) {},
+      registerCommand(_n: string, _o: Record<string, unknown>) {},
     };
 
     const mod = await import("../../src/index.js");
@@ -88,6 +91,7 @@ describe("provider registration", () => {
         captured = { config };
       },
       on(_event: string, _handler: unknown) {},
+      registerCommand(_n: string, _o: Record<string, unknown>) {},
     };
 
     const mod = await import("../../src/index.js");
@@ -115,6 +119,7 @@ describe("message_end event registration", () => {
 
     const fakePi = {
       registerProvider(_name: string, _config: Record<string, unknown>) {},
+      registerCommand(_name: string, _options: Record<string, unknown>) {},
       on(event: string, _handler: unknown) {
         registeredEvents.push(event);
       },

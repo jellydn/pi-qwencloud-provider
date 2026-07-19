@@ -21,6 +21,7 @@ import { resolveApiKey } from "./auth.js";
 import { resolveModels } from "./models.js";
 import { handleQwenCloudError } from "./error-handler.js";
 import { getApiKey as oauthGetApiKey, login, refreshToken } from "./oauth.js";
+import { generateAndDownloadWanImage } from "./wan.js";
 
 // QwenCloud exposes a standard OpenAI-compatible chat completions API.
 // It supports both `system` and `developer` roles, so `supportsDeveloperRole`
@@ -71,4 +72,54 @@ export default async function (pi: ExtensionAPI) {
   // The handler in error-handler.ts owns the full pipeline:
   // filter → classify → deliver.
   pi.on("message_end", handleQwenCloudError);
+
+  // ─── Wan Image Generation Slash Command ───────────────────────────────
+  //
+  // Wan uses a separate synchronous API endpoint (not chat/completions).
+  // The /wan slash command generates images from text prompts and saves
+  // them to the current working directory.
+  //
+  // Usage: /wan a cyberpunk cat on a rainy street
+  // Options: /wan --model wan2.7-image-pro --size 2K a photorealistic dog
+  pi.registerCommand("wan", {
+    description: "Generate an image with QwenCloud Wan (e.g. /wan a cyberpunk cat)",
+    async handler(args, ctx) {
+      // Parse optional flags
+      let model = "wan2.7-image";
+      let size = "1K";
+      let prompt = args.trim();
+
+      const modelMatch = prompt.match(/^--model\s+(\S+)\s*/);
+      if (modelMatch) {
+        model = modelMatch[1];
+        prompt = prompt.slice(modelMatch[0].length).trim();
+      }
+
+      const sizeMatch = prompt.match(/^--size\s+(\S+)\s*/);
+      if (sizeMatch) {
+        size = sizeMatch[1];
+        prompt = prompt.slice(sizeMatch[0].length).trim();
+      }
+
+      if (!prompt) {
+        ctx.ui.notify("Usage: /wan [--model <model>] [--size <size>] <prompt>", "warning");
+        ctx.ui.notify("Models: wan2.7-image, wan2.7-image-pro  |  Sizes: 1K, 2K, 4K", "info");
+        return;
+      }
+
+      try {
+        ctx.ui.setWorkingMessage(`Generating image with ${model}...`);
+        const result = await generateAndDownloadWanImage(prompt, ctx.cwd, {
+          model,
+          size,
+        });
+        ctx.ui.setWorkingMessage(undefined);
+        ctx.ui.notify(`Wan image saved: ${result.localPath}`, "info");
+      } catch (err: unknown) {
+        ctx.ui.setWorkingMessage(undefined);
+        const message = err instanceof Error ? err.message : "Unknown error";
+        ctx.ui.notify(`Wan generation failed: ${message}`, "error");
+      }
+    },
+  });
 }
