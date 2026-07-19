@@ -3,9 +3,13 @@
  *
  * Each model owns a `ThinkingLevelMap` that translates pi's six thinking
  * levels to provider-specific `reasoning_effort` values (or `null` for
- * unsupported). This module owns the maps and the single interface that
- * all consumers call — catalog, discovery, and model config all go through
- * `reasoningEffortFor()`.
+ * unsupported). This module owns the maps and two interfaces:
+ *
+ *   `thinkingMapFor(reasoning, fallbackMap?)` — selects the correct
+ *     map; used by discovery.ts to replace the old inline ternary.
+ *
+ *   `reasoningEffortFor(map, level)` — translates a single pi thinking
+ *     level to a provider reasoning_effort string.
  *
  * @module qwencloud-thinking
  */
@@ -29,6 +33,24 @@ export type ThinkingLevelMap = Readonly<Record<ThinkingLevel, string | null>>;
  */
 export function reasoningEffortFor(map: ThinkingLevelMap, level: ThinkingLevel): string | null {
   return map[level];
+}
+
+/**
+ * Select the thinking level map for a model based on whether it supports
+ * reasoning and has a known fallback map.
+ *
+ * This is the single map-selection rule shared by catalog and discovery.
+ *
+ * @param reasoning   Whether the model supports reasoning.
+ * @param fallbackMap Optional known fallback from the static catalog.
+ * @returns           The appropriate `ThinkingLevelMap` for the model.
+ */
+export function thinkingMapFor(
+  reasoning: boolean,
+  fallbackMap?: ThinkingLevelMap,
+): ThinkingLevelMap {
+  if (!reasoning) return NO_THINKING_MAP;
+  return fallbackMap ?? DEFAULT_THINKING_LEVEL_MAP;
 }
 
 /**

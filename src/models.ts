@@ -20,6 +20,7 @@ export {
   GLM_52_THINKING_MAP,
   NO_THINKING_MAP,
   reasoningEffortFor,
+  thinkingMapFor,
 } from "./thinking.js";
 
 // ─── Catalog (static model data) ───────────────────────────────────────────

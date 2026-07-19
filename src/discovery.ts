@@ -14,7 +14,7 @@
 import { resolveApiBase } from "./env.js";
 import { booleanValue, isRecord, numberValue, stringValue } from "./utils.js";
 import { type ModelConfig, MODELS, isNonChatModel } from "./catalog.js";
-import { DEFAULT_THINKING_LEVEL_MAP, NO_THINKING_MAP } from "./thinking.js";
+import { thinkingMapFor } from "./thinking.js";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -79,10 +79,8 @@ function parseRemoteModel(raw: RawModelEntry, fallback?: ModelConfig): ModelConf
     cost,
     contextWindow,
     maxTokens,
-    // Single map-selection rule (vs the inline ternary in the old models.ts).
-    thinkingLevelMap: reasoning
-      ? (fallback?.thinkingLevelMap ?? DEFAULT_THINKING_LEVEL_MAP)
-      : NO_THINKING_MAP,
+    // Single map-selection rule — delegated to thinking.ts.
+    thinkingLevelMap: thinkingMapFor(reasoning, fallback?.thinkingLevelMap),
     compat: compat ?? {
       // Re-derive from catalog defaults when no fallback exists.
       supportsDeveloperRole: false,
