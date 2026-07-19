@@ -14,6 +14,8 @@
  * @module qwencloud-thinking
  */
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 /** Pi thinking levels that models map to provider-specific reasoning_effort. */
 export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
 
@@ -22,6 +24,8 @@ export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhi
  * provider-specific `reasoning_effort` string or `null` (unsupported).
  */
 export type ThinkingLevelMap = Readonly<Record<ThinkingLevel, string | null>>;
+
+// ─── Translation Functions ───────────────────────────────────────────────────
 
 /**
  * Translate a pi thinking level to a QwenCloud reasoning_effort value.
@@ -52,6 +56,8 @@ export function thinkingMapFor(
   if (!reasoning) return NO_THINKING_MAP;
   return fallbackMap ?? DEFAULT_THINKING_LEVEL_MAP;
 }
+
+// ─── Thinking Level Maps ─────────────────────────────────────────────────────
 
 /**
  * Default thinking level map for Qwen models.
