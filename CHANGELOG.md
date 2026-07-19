@@ -24,9 +24,11 @@ Initial release — QwenCloud provider for pi.
 ### Features
 
 - OpenAI-compatible chat completions via `QWENCLOUD_API_KEY`
-- `reasoning_effort` support (low/medium/high/none) — verified against live API
+- `reasoning_effort` support (low/medium/high/xhigh) — Qwen family uses `enable_thinking`/`thinking_budget`; DeepSeek/GLM use `reasoning_effort` (`high`/`max`). There is **no** `none` value on the chat/completions path; `off` omits the param (model default)
 - Dynamic model discovery from `/models` endpoint with static fallback
 - Simple API-key login flow (no OAuth required)
 - User-friendly error classification: 401 (invalid key), 403 (plan expired), 429 (rate limited), quota exceeded
 - Non-chat models (Wan, HappyHorse) filtered from dynamic discovery
 - 86 unit tests + E2E smoke tests
+
+> **Model availability**: `deepseek-v4-pro` is **not confirmed** against the live API — a request to `qwencloud/deepseek-v4-pro` returned `404 model_not_found` at publish time. The catalog lists it as a reference entry; verify the exact slug via the `/models` endpoint or your QwenCloud Token Plan before relying on it.
