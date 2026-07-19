@@ -49,13 +49,14 @@ pnpm add pi-qwencloud-provider
 
 ## Supported Models
 
-| Model           | Model ID                    | Context | Reasoning                   |
-| :-------------- | :-------------------------- | :------ | :-------------------------- |
-| Qwen3.7 Max     | `qwencloud/qwen3.7-max`     | 262K    | low / medium / high         |
-| Qwen3.7 Plus    | `qwencloud/qwen3.7-plus`    | 1M      | low / medium / high         |
-| Qwen3.6 Flash   | `qwencloud/qwen3.6-flash`   | 131K    | off (no reasoning)          |
-| DeepSeek V4 Pro | `qwencloud/deepseek-v4-pro` | 1M      | high (xhigh → max)          |
-| GLM-5.2         | `qwencloud/glm-5.2`         | 200K    | low / medium / high / xhigh |
+| Model               | Model ID                        | Context | Reasoning                   |
+| :------------------ | :------------------------------ | :------ | :-------------------------- |
+| Qwen3.8 Max Preview | `qwencloud/qwen3.8-max-preview` | 262K    | low / medium / high         |
+| Qwen3.7 Max         | `qwencloud/qwen3.7-max`         | 262K    | low / medium / high         |
+| Qwen3.7 Plus        | `qwencloud/qwen3.7-plus`        | 1M      | low / medium / high         |
+| Qwen3.6 Flash       | `qwencloud/qwen3.6-flash`       | 131K    | off (no reasoning)          |
+| DeepSeek V4 Pro     | `qwencloud/deepseek-v4-pro`     | 1M      | high (xhigh → max)          |
+| GLM-5.2             | `qwencloud/glm-5.2`             | 200K    | low / medium / high / xhigh |
 
 > **Thinking levels**: pi supports 6 levels — `off`, `minimal`, `low`, `medium`, `high`, `xhigh`. Each model declares which levels it supports, mapped to the provider's `reasoning_effort` parameter. Set the thinking level with pi's `--thinking` flag or `/thinking` command. A level marked as unsupported maps to `null` — no `reasoning_effort` is sent to the API, so the model runs with its default reasoning behavior.
 >

@@ -4,8 +4,8 @@
  * @module qwencloud-models
  */
 
-import { isRecord, stringValue, numberValue, booleanValue } from "./utils.js";
 import { resolveApiBase } from "./env.js";
+import { booleanValue, isRecord, numberValue, stringValue } from "./utils.js";
 
 // ─── Model Definitions ─────────────────────────────────────────────────────
 
@@ -100,7 +100,12 @@ export interface ModelConfig {
   name: string;
   reasoning: boolean;
   input: readonly ["text"] | readonly ["text", "image"];
-  cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
+  cost: {
+    input: number;
+    output: number;
+    cacheRead: number;
+    cacheWrite: number;
+  };
   contextWindow: number;
   maxTokens: number;
   /**
@@ -124,9 +129,7 @@ const MODELS_BASE: readonly ModelConfigBase[] = [
     name: "Qwen3.8 Max Preview (QwenCloud)",
     reasoning: true,
     input: ["text"],
-    // Pricing not publicly documented for Token Plan; estimates provided.
-    // qwen3.8-max-preview is not yet in the official Token Plan pricing table
-    // (which tops out at qwen3.7-max). These values are approximate.
+    // Cost estimate — Token Plan reference pricing for usage tracking only.
     cost: { input: 2.5, output: 7.5, cacheRead: 0.5, cacheWrite: 3.125 },
     contextWindow: 262_144,
     maxTokens: 131_072,
