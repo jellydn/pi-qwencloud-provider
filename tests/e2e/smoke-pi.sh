@@ -74,11 +74,29 @@ run_test "DeepSeek response" \
   "OK"
 
 # ─── Test 4: GLM-5.2 ────────────────────────────────────────────────────
-echo -e "${YELLOW}[4/4] GLM-5.2${NC}"
+echo -e "${YELLOW}[4/5] GLM-5.2${NC}"
 run_test "GLM response" \
   "glm-5.2" \
   "Say exactly and only: YES" \
   "YES"
+
+# ─── Test 5: Vision (qwen3.7-plus) ──────────────────────────────────────
+echo -e "${YELLOW}[5/5] Vision — qwen3.7-plus${NC}"
+
+# Create a test image for vision. Requires python3 (stdlib only, no PIL).
+TEST_IMAGE="/tmp/vision-smoke-test.png"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if command -v python3 &>/dev/null; then
+  python3 "$SCRIPT_DIR/create-test-image.py" "$TEST_IMAGE"
+
+  run_test "Image description" \
+    "qwen3.7-plus" \
+    "Describe the image at $TEST_IMAGE in one short sentence." \
+    "red"
+else
+  echo -e "  Vision test ... ${YELLOW}SKIP (python3 not found)${NC}"
+fi
 
 # ─── Summary ────────────────────────────────────────────────────────────
 echo ""
