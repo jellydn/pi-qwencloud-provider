@@ -45,6 +45,12 @@ export interface HappyHorseGenerateOptions {
   model?: string;
   /** Image URL for i2v/r2v models (optional for t2v). */
   imageUrl?: string;
+  /** Video resolution. Default: "720P". */
+  resolution?: string;
+  /** Aspect ratio. Default: "16:9". */
+  ratio?: string;
+  /** Video duration in seconds (3–15). Default: 5. */
+  duration?: number;
   /** Optional API key override. */
   apiKey?: string;
   /** Injectable fetch for testing. */
@@ -80,6 +86,9 @@ async function submitTask(
   imageUrl: string | undefined,
   apiBaseUrl: string,
   fetchFn: typeof globalThis.fetch,
+  resolution: string,
+  ratio: string,
+  duration: number,
 ): Promise<string> {
   // Build the input payload based on model type.
   const input: Record<string, unknown> = {};
@@ -99,6 +108,11 @@ async function submitTask(
   const body = {
     model,
     input,
+    parameters: {
+      resolution,
+      ratio,
+      duration,
+    },
   };
 
   const response = await fetchFn(apiBaseUrl, {
@@ -240,7 +254,17 @@ export async function generateAndDownloadHappyHorseVideo(
   const { submitUrl, taskBaseUrl } = buildEndpoints();
 
   // 1. Submit the generation task.
-  const taskId = await submitTask(prompt, apiKey, model, options.imageUrl, submitUrl, fetchFn);
+  const taskId = await submitTask(
+    prompt,
+    apiKey,
+    model,
+    options.imageUrl,
+    submitUrl,
+    fetchFn,
+    options.resolution ?? "720P",
+    options.ratio ?? "16:9",
+    options.duration ?? 5,
+  );
 
   // 2. Poll for completion.
   const videoUrl = await pollTask(
