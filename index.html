@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>pi-qwencloud-provider — QwenCloud models for pi</title>
+<meta name="description" content="pi extension that registers QwenCloud as a model provider. Access Qwen3.8, DeepSeek V4, GLM-5.2, Wan image gen, and HappyHorse video gen through QwenCloud's OpenAI-compatible API.">
+<meta property="og:title" content="pi-qwencloud-provider">
+<meta property="og:description" content="QwenCloud model provider for pi — Qwen3.8, DeepSeek V4, GLM-5.2, Wan, HappyHorse">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23d4a017'/><text x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-family='monospace' font-size='20' font-weight='700' fill='%2317161a'>q</text></svg>">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: {
+            DEFAULT: '#f4f0ea',
+            muted: '#a8a39a',
+            subtle: '#5c5860',
+          },
+          void: {
+            DEFAULT: '#17161a',
+            lift: '#1e1d21',
+            raised: '#26252a',
+            line: '#363540',
+          },
+          amber: {
+            DEFAULT: '#d4a017',
+            light: '#e8b830',
+            soft: 'rgba(212, 160, 23, 0.12)',
+            glow: 'rgba(212, 160, 23, 0.06)',
+          },
+          accent: {
+            green: '#4ade80',
+            red: '#f87171',
+          },
+        },
+        fontFamily: {
+          mono: ['"SF Mono"', '"Fira Code"', '"Cascadia Code"', 'Menlo', 'monospace'],
+        },
+      }
+    }
+  }
+</script>
+<style>
+  .code-block {
+    tab-size: 2;
+    -moz-tab-size: 2;
+  }
+  .glow-line {
+    background: linear-gradient(180deg, rgba(212,160,23,0.15) 0%, transparent 100%);
+    height: 1px;
+  }
+  @keyframes pulse-amber {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(212,160,23,0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(212,160,23,0); }
+  }
+  .copy-feedback {
+    animation: pulse-amber 0.6s ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after { animation-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body class="bg-void text-ink antialiased">
+
+<header class="border-b border-void-line/40">
+  <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 bg-amber rounded-md flex items-center justify-center text-void font-mono font-bold text-lg">q</div>
+      <span class="font-mono text-sm text-ink-muted">pi-qwencloud-provider</span>
+    </div>
+    <nav class="flex items-center gap-6 text-sm text-ink-muted">
+      <a href="#install" class="hover:text-ink transition-colors">Install</a>
+      <a href="#models" class="hover:text-ink transition-colors">Models</a>
+      <a href="#usage" class="hover:text-ink transition-colors">Usage</a>
+      <a href="https://github.com/jellydn/pi-qwencloud-provider" class="text-ink-muted hover:text-ink transition-colors" aria-label="GitHub repository">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- Hero -->
+  <section class="max-w-5xl mx-auto px-6 pt-24 pb-16 md:pt-32 md:pb-24">
+    <div class="max-w-2xl">
+      <p class="font-mono text-xs tracking-widest uppercase text-amber mb-5">pi extension</p>
+      <h1 class="text-4xl md:text-5xl font-bold leading-tight tracking-tight">
+        QwenCloud models<br>
+        <span class="text-ink-muted">for your coding agent</span>
+      </h1>
+      <p class="mt-6 text-lg text-ink-muted leading-relaxed max-w-xl">
+        One install gives pi access to Qwen3.8, DeepSeek V4, GLM-5.2, Wan image generation, and HappyHorse video — all through QwenCloud's OpenAI-compatible API.
+      </p>
+      <div class="mt-8 flex flex-col sm:flex-row gap-3">
+        <a href="#install" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-amber text-void font-semibold rounded-lg hover:bg-amber-light transition-colors text-sm">
+          Get started
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </a>
+        <a href="https://github.com/jellydn/pi-qwencloud-provider" class="inline-flex items-center justify-center gap-2 px-6 py-3 border border-void-line text-ink-muted rounded-lg hover:border-void-line/60 hover:text-ink transition-all text-sm">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <div class="glow-line"></div>
+
+  <!-- Install -->
+  <section id="install" class="max-w-5xl mx-auto px-6 py-20 md:py-28">
+    <h2 class="text-xs font-mono tracking-widest uppercase text-amber mb-4">Installation</h2>
+    <div class="max-w-2xl">
+      <p class="text-lg text-ink-muted mb-8">Install as a pi extension — no config, no build step. Models load on startup.</p>
+    </div>
+    <div class="grid gap-4 max-w-2xl">
+      <!-- Install command -->
+      <div class="group bg-void-lift border border-void-line rounded-lg overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-2.5 border-b border-void-line/50">
+          <span class="text-xs text-ink-muted font-mono">npm install</span>
+          <button
+            onclick="copyToClipboard(this, 'pi install npm:pi-qwencloud-provider')"
+            class="text-xs text-ink-muted hover:text-ink transition-colors flex items-center gap-1.5"
+            aria-label="Copy install command">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke-width="2"/></svg>
+            Copy
+          </button>
+        </div>
+        <pre class="px-4 py-3 text-sm font-mono text-ink overflow-x-auto code-block"><code>pi install npm:pi-qwencloud-provider</code></pre>
+      </div>
+
+      <!-- Git install -->
+      <div class="group bg-void-lift border border-void-line rounded-lg overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-2.5 border-b border-void-line/50">
+          <span class="text-xs text-ink-muted font-mono">git install</span>
+          <button
+            onclick="copyToClipboard(this, 'pi install git:github.com/jellydn/pi-qwencloud-provider')"
+            class="text-xs text-ink-muted hover:text-ink transition-colors flex items-center gap-1.5"
+            aria-label="Copy git install command">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke-width="2"/></svg>
+            Copy
+          </button>
+        </div>
+        <pre class="px-4 py-3 text-sm font-mono text-ink overflow-x-auto code-block"><code>pi install git:github.com/jellydn/pi-qwencloud-provider</code></pre>
+      </div>
+
+      <!-- Env var -->
+      <div class="group bg-void-lift border border-void-line rounded-lg overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-2.5 border-b border-void-line/50">
+          <span class="text-xs text-ink-muted font-mono">environment variable</span>
+          <button
+            onclick="copyToClipboard(this, 'export QWENCLOUD_API_KEY=\"your_key_here\"')"
+            class="text-xs text-ink-muted hover:text-ink transition-colors flex items-center gap-1.5"
+            aria-label="Copy env var command">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke-width="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke-width="2"/></svg>
+            Copy
+          </button>
+        </div>
+        <pre class="px-4 py-3 text-sm font-mono text-ink overflow-x-auto code-block"><code><span class="text-ink-subtle">export</span> QWENCLOUD_API_KEY=<span class="text-amber">"your_key_here"</span></code></pre>
+      </div>
+    </div>
+    <p class="mt-4 text-xs text-ink-subtle max-w-lg leading-relaxed">
+      Get your API key from <a href="https://home.qwencloud.com" class="text-amber hover:underline">home.qwencloud.com</a> → API Keys. Or run <code class="font-mono text-ink-muted">pi /login</code> and select QwenCloud — it opens the dashboard and prompts for your key.
+    </p>
+  </section>
+
+  <div class="glow-line"></div>
+
+  <!-- Models -->
+  <section id="models" class="max-w-5xl mx-auto px-6 py-20 md:py-28">
+    <h2 class="text-xs font-mono tracking-widest uppercase text-amber mb-4">Supported Models</h2>
+    <div class="max-w-2xl mb-10">
+      <p class="text-lg text-ink-muted">Chat models, image generation, and video generation — all through one provider.</p>
+    </div>
+
+    <!-- Chat models -->
+    <h3 class="text-sm font-semibold text-ink mb-4">Chat & Reasoning</h3>
+    <div class="overflow-x-auto border border-void-line rounded-lg mb-8">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-void-line text-left text-ink-muted text-xs">
+            <th class="px-4 py-3 font-medium">Model</th>
+            <th class="px-4 py-3 font-medium hidden sm:table-cell">Model ID</th>
+            <th class="px-4 py-3 font-medium hidden md:table-cell">Context</th>
+            <th class="px-4 py-3 font-medium">Reasoning</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-void-line/50">
+          <tr class="hover:bg-void-lift/50 transition-colors">
+            <td class="px-4 py-3 font-medium">Qwen3.8 Max Preview</td>
+            <td class="px-4 py-3 font-mono text-xs text-ink-muted hidden sm:table-cell">qw/qwen3.8-max-preview</td>
+            <td class="px-4 py-3 text-ink-muted hidden md:table-cell">262K</td>
+            <td class="px-4 py-3"><span class="inline-flex items-center gap-1 text-xs text-ink-muted"><span class="w-1.5 h-1.5 rounded-full bg-accent-green"></span>low · medium · high</span></td>
+          </tr>
+          <tr class="hover:bg-void-lift/50 transition-colors">
+            <td class="px-4 py-3 font-medium">Qwen3.7 Max</td>
+            <td class="px-4 py-3 font-mono text-xs text-ink-muted hidden sm:table-cell">qw/qwen3.7-max</td>
+            <td class="px-4 py-3 text-ink-muted hidden md:table-cell">262K</td>
+            <td class="px-4 py-3"><span class="inline-flex items-center gap-1 text-xs text-ink-muted"><span class="w-1.5 h-1.5 rounded-full bg-accent-green"></span>low · medium · high</span></td>
+          </tr>
+          <tr class="hover:bg-void-lift/50 transition-colors">
+            <td class="px-4 py-3 font-medium">Qwen3.7 Plus</td>
+            <td class="px-4 py-3 font-mono text-xs text-ink-muted hidden sm:table-cell">qw/qwen3.7-plus</td>
+            <td class="px-4 py-3 text-ink-muted hidden md:table-cell">1M</td>
+            <td class="px-4 py-3"><span class="inline-flex items-center gap-1 text-xs text-ink-muted"><span class="w-1.5 h-1.5 rounded-full bg-accent-green"></span>low · medium · high</span></td>
+          </tr>
+          <tr class="hover:bg-void-lift/50 transition-colors">
+            <td class="px-4 py-3 font-medium">Qwen3.6 Flash</td>
+            <td class="px-4 py-3 font-mono text-xs text-ink-muted hidden sm:table-cell">qw/qwen3.6-flash</td>
+            <td class="px-4 py-3 text-ink-muted hidden md:table-cell">131K</td>
+            <td class="px-4 py-3"><span class="inline-flex items-center gap-1 text-xs text-ink-muted"><span class="w-1.5 h-1.5 rounded-full bg-accent-green"></span>low · medium · high</span></td>
+          </tr>
+          <tr class="hover:bg-void-lift/50 transition-colors">
+            <td class="px-4 py-3 font-medium">DeepSeek V4 Pro</td>
+            <td class="px-4 py-3 font-mono text-xs text-ink-muted hidden sm:table-cell">qw/deepseek-v4-pro</td>
+            <td class="px-4 py-3 text-ink-muted hidden md:table-cell">1M</td>
+            <td class="px-4 py-3"><span class="inline-flex items-center gap-1 text-xs text-ink-muted"><span class="w-1.5 h-1.5 rounded-full bg-accent-green"></span>high · xhigh</span></td>
+          </tr>
+          <tr class="hover:bg-void-lift/50 transition-colors">
+            <td class="px-4 py-3 font-medium">GLM-5.2</td>
+            <td class="px-4 py-3 font-mono text-xs text-ink-muted hidden sm:table-cell">qw/glm-5.2</td>
+            <td class="px-4 py-3 text-ink-muted hidden md:table-cell">200K</td>
+            <td class="px-4 py-3"><span class="inline-flex items-center gap-1 text-xs text-ink-muted"><span class="w-1.5 h-1.5 rounded-full bg-accent-green"></span>low · medium · high · xhigh</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Image & Video -->
+    <h3 class="text-sm font-semibold text-ink mb-4">Image & Video Generation</h3>
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div class="border border-void-line rounded-lg p-5 hover:border-void-line/60 transition-colors">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-8 h-8 bg-amber-soft rounded-md flex items-center justify-center">
+            <svg class="w-4 h-4 text-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/><path d="M21 15l-5-5L5 21" stroke-width="2"/></svg>
+          </div>
+          <div>
+            <p class="font-medium text-sm">Wan Image Generation</p>
+            <p class="text-xs text-ink-muted font-mono">/wan</p>
+          </div>
+        </div>
+        <p class="text-xs text-ink-muted leading-relaxed">Generate images from text prompts directly in pi. Supports wan2.7-image and wan2.7-image-pro models at 1K, 2K, and 4K resolutions.</p>
+      </div>
+      <div class="border border-void-line rounded-lg p-5 hover:border-void-line/60 transition-colors">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-8 h-8 bg-amber-soft rounded-md flex items-center justify-center">
+            <svg class="w-4 h-4 text-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></svg>
+          </div>
+          <div>
+            <p class="font-medium text-sm">HappyHorse Video</p>
+            <p class="text-xs text-ink-muted font-mono">/happyhorse</p>
+          </div>
+        </div>
+        <p class="text-xs text-ink-muted leading-relaxed">Text-to-video, image-to-video, and reference-to-video generation with HappyHorse 1.1 models.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="glow-line"></div>
+
+  <!-- Usage -->
+  <section id="usage" class="max-w-5xl mx-auto px-6 py-20 md:py-28">
+    <h2 class="text-xs font-mono tracking-widest uppercase text-amber mb-4">Usage</h2>
+    <div class="max-w-2xl mb-10">
+      <p class="text-lg text-ink-muted">Reference models with the <code class="font-mono text-ink">qw/</code> prefix. Switch models in-session or start with one.</p>
+    </div>
+
+    <div class="space-y-4 max-w-2xl">
+      <div class="border border-void-line rounded-lg overflow-hidden">
+        <pre class="px-4 py-3 text-sm font-mono text-ink overflow-x-auto code-block"><code><span class="text-ink-subtle"># Interactive session with DeepSeek V4 Pro</span>
+pi <span class="text-ink-muted">--model</span> qw/deepseek-v4-pro
+
+<span class="text-ink-subtle"># One-shot with high reasoning</span>
+pi <span class="text-ink-muted">--model</span> qw/deepseek-v4-pro <span class="text-ink-muted">--thinking</span> high <span class="text-ink-muted">-p</span> <span class="text-amber">"Design a scalable microservice architecture"</span>
+
+<span class="text-ink-subtle"># Generate an image</span>
+pi <span class="text-ink-muted">--model</span> qw/qwen3.7-plus <span class="text-ink-muted">-p</span> <span class="text-amber">"/wan a cyberpunk cat on a rainy street"</span>
+
+<span class="text-ink-subtle"># List available QwenCloud models</span>
+pi <span class="text-ink-muted">--list-models</span> qw</code></pre>
+      </div>
+    </div>
+
+    <div class="mt-8 grid sm:grid-cols-3 gap-4 max-w-2xl">
+      <div class="border border-void-line rounded-lg p-4">
+        <p class="text-xs text-ink-muted mb-1">Thinking Levels</p>
+        <p class="text-sm leading-relaxed">Six levels — <span class="text-ink">off · minimal · low · medium · high · xhigh</span>. Per-model support mapped to <code class="font-mono text-xs text-ink-muted">reasoning_effort</code>.</p>
+      </div>
+      <div class="border border-void-line rounded-lg p-4">
+        <p class="text-xs text-ink-muted mb-1">Auth Resolution</p>
+        <p class="text-sm leading-relaxed">Explicit key → <code class="font-mono text-xs text-ink-muted">QWENCLOUD_API_KEY</code> → <code class="font-mono text-xs text-ink-muted">~/.pi/agent/auth.json</code>.</p>
+      </div>
+      <div class="border border-void-line rounded-lg p-4">
+        <p class="text-xs text-ink-muted mb-1">Dynamic Discovery</p>
+        <p class="text-sm leading-relaxed">Live <code class="font-mono text-xs text-ink-muted">/models</code> fetch at startup with 5s timeout. Falls back to curated static list on any error.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="glow-line"></div>
+
+  <!-- Bottom CTA -->
+  <section class="max-w-5xl mx-auto px-6 py-20 md:py-28 text-center">
+    <div class="max-w-lg mx-auto">
+      <h2 class="text-2xl md:text-3xl font-bold tracking-tight mb-4">One install, all the models</h2>
+      <p class="text-ink-muted leading-relaxed mb-8">
+        Qwen3.8, DeepSeek V4, GLM-5.2, Wan, HappyHorse — all through QwenCloud's Token Plan. Static API key, OpenAI-compatible, no OAuth dance.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="#install" class="inline-flex items-center justify-center px-6 py-3 bg-amber text-void font-semibold rounded-lg hover:bg-amber-light transition-colors text-sm">
+          Install now
+        </a>
+        <a href="https://github.com/jellydn/pi-qwencloud-provider" class="inline-flex items-center justify-center px-6 py-3 border border-void-line text-ink-muted rounded-lg hover:border-void-line/60 hover:text-ink transition-all text-sm">
+          Star on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="border-t border-void-line/40">
+  <div class="max-w-5xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-ink-subtle">
+    <p>MIT License · <a href="https://github.com/jellydn" class="hover:text-ink transition-colors">@jellydn</a></p>
+    <div class="flex items-center gap-4">
+      <a href="https://www.npmjs.com/package/pi-qwencloud-provider" class="hover:text-ink transition-colors">npm</a>
+      <a href="https://github.com/jellydn/pi-qwencloud-provider" class="hover:text-ink transition-colors">GitHub</a>
+      <a href="https://home.qwencloud.com" class="hover:text-ink transition-colors">QwenCloud</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+function copyToClipboard(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<span class="text-accent-green">Copied</span>';
+    btn.classList.add('copy-feedback');
+    setTimeout(() => {
+      btn.innerHTML = orig;
+      btn.classList.remove('copy-feedback');
+    }, 1800);
+  });
+}
+</script>
+
+</body>
+</html>
