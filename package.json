@@ -52,7 +52,7 @@
     "pub": "npm publish"
   },
   "devDependencies": {
-    "@earendil-works/pi-ai": "^0.80.2",
+    "@earendil-works/pi-ai": "^0.81.0",
     "@earendil-works/pi-coding-agent": "^0.80.2",
     "@types/node": "^26.0.1",
     "bumpp": "^12.0.0",
